@@ -1,0 +1,48 @@
+{
+  "name": "resume-latex-renderer",
+  "version": "0.1.0",
+  "description": "Render a plain resume JSON object into a complete, compilable LaTeX document using built-in templates. Pure, dependency-free, framework-agnostic.",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./templates": "./src/templates/index.js",
+    "./latex": "./src/latex.js",
+    "./schema": "./src/schema.js"
+  },
+  "files": [
+    "src",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "resume",
+    "cv",
+    "latex",
+    "tex",
+    "pdf",
+    "resume-builder",
+    "template",
+    "renderer"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/resume-latex-renderer.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

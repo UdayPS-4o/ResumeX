@@ -1,0 +1,94 @@
+\documentclass[10pt]{article}
+\usepackage[legalpaper,left=0.65in,right=0.65in,top=0.55in,bottom=0.55in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[usenames,dvipsnames]{xcolor}
+\definecolor{accent}{HTML}{1a56db}
+\definecolor{subtext}{HTML}{374151}
+\usepackage[hidelinks,colorlinks=true,urlcolor=accent]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3.5pt}
+
+% One shared blue rule so every divider is identical.
+\newcommand{\bluerule}{\noindent{\color{accent}\rule{\linewidth}{0.6pt}}}
+
+% Blue section header with a blue rule underneath (even spacing above & below).
+\newcommand{\sectionhead}[1]{%
+  \vspace{8pt}%
+  \noindent{\color{accent}\textbf{\large\MakeUppercase{#1}}}%
+  \\[-5pt]%
+  \bluerule%
+  \vspace{6pt}%
+}
+
+% Bold title left, date right, forced newline
+\newcommand{\entryhead}[2]{%
+  \noindent\textbf{#1}\hfill #2\\%
+}
+
+\begin{document}
+
+{\fontsize{28}{32}\selectfont\color{accent}\textbf{UDAY PRATAP SINGH PARIHAR}}
+
+\vspace{5pt}
+{\fontsize{14}{18}\selectfont\bfseries FULL STACK \textbar{} AUTOMATION \textbar{} REVERSE ENGINEERING}
+
+\vspace{4pt}
+{\small Indore, Madhya Pradesh, India $|$ 8819923334 $|$ \href{mailto:work@udayps.com}{work@udayps.com}}
+
+\vspace{6pt}
+\bluerule
+
+\sectionhead{Profile}
+Full-stack developer focused on shipping production features and building efficient automation systems. Hands-on experience building LLM-powered products, developing agentic workflows, and reverse-engineering complex APIs to solve integration challenges. Comfortable with high-throughput systems and building reliable tools where documentation is limited. I enjoy digging into how systems work to deliver scalable, impactful solutions.
+
+\sectionhead{Work Experience}
+\entryhead{Founding Engineer, Delivo}{Jan 2023 --- Feb 2025}
+{\small\color{subtext}Mumbai, Maharashtra, India}\\[2pt]
+Built a cutting-edge logistics web platform to streamline the management of international shipping operation,
+\begin{itemize}[leftmargin=1.3em,itemsep=-2pt,topsep=2pt,parsep=0pt]
+  \item Owned the end-to-end tech stack, from platform architecture and core workflows to client/warehouse dashboards and system integrations.
+  \item Collaborated with cross-functional teams to ensure seamless integration with existing systems and compliance with international shipping regulations.
+\end{itemize}
+\vspace{5pt}
+\entryhead{Software Engineer Intern, Tradyon}{May 2025 --- Jul 2025}
+{\small\color{subtext}Bengaluru, Karnataka, India}\\[2pt]
+Delivered end-to-end product features for Tradyon's cross platform AI chatbot (\textbf{Next.js} web + \textbf{React Native} app).
+\begin{itemize}[leftmargin=1.3em,itemsep=-2pt,topsep=2pt,parsep=0pt]
+  \item Shipped production features and bug fixes across web and mobile to improve chatbot UX and reliability.
+  \item \textbf{Built agentic workflows using Dify} and n8n to orchestrate LLM interactions with global trade-data retrieval (BigQuery backed) and downstream response generation.
+  \item Enabled rich responses (text + charts/graphs) by wiring workflows into the app's existing data/services layer.
+  \item Worked in a fast iteration cycle, prioritizing delivery speed while maintaining code quality.
+\end{itemize}
+
+\sectionhead{Freelance Projects}
+\entryhead{EHR Automation --- eClinicalWorks}{Aug 2025}
+\textbf{Reverse engineered the platform's payload encryption} of request endpoints to enable reliable automation. Built a custom API wrapper by analyzing network traffic and request/response patterns, enabling programmatic patient creation and appointment scheduling (UI-free integration layer).
+
+\vspace{4pt}
+\entryhead{E-commerce Automation --- Myntra, Flipkart}{Dec 2023}
+Built an automation suite with high volume account generation (500+), restock/price monitors, and a low-latency \textbf{request-driven bulk checkout executor} (\textasciitilde{}2s COD) at 500+ concurrency. Implemented a \textbf{centralized web dashboard} to manage accounts, orders, and delivery codes; deployed on GCP Cloud Run for scale. Integrated automated card payment flows with \textbf{3DS OTP capture/autofill} via companion app integration to reduce manual intervention.
+
+\vspace{4pt}
+\entryhead{High-Concurrency Ticketing --- BookMyShow / District}{Oct 2024 --- Nov 2025}
+Engineered an end-to-end RPA ticketing suite controlling \textbf{50 concurrent accounts on Firefox} with an IMAP-based auto-login pipeline for high-demand drops (Coldplay, Travis Scott, Diljit Dosanjh, 2023 World Cup). Engineered custom Queue-IT bypass logic by optimizing request timing to consistently achieve \textbf{sub 500 queue positions}, and deployed a centralized monitor to track live queue progression and seat availability across all active sessions.
+
+\vspace{4pt}
+\entryhead{Real-Time Copy Trading Bot (Solana + EVM)}{Jul 2024}
+Built a real time copy trading system across Solana and EVM chains (Ethereum, Base), supporting multiple copier + copying wallets. Monitored on-chain transactions via RPC nodes, detected and decoded swap input data, and mirrored trades with configurable allocation executing within the next block.
+
+\sectionhead{Skills}
+\textbf{Automation:} API/Android Reverse Engineering, Puppeteer, Appium, SSL Proxying, Burp, Frida, Dify\\[1pt]
+\textbf{Frontend:} React, Next.js, TypeScript, Tailwind, React Native\\[1pt]
+\textbf{Backend \& DB:} Node.js, Python, PHP, MySQL, Mongo\\[1pt]
+\textbf{Cloud \& Infra:} GCP (Cloud Run), AWS, Serverless, Nginx, Linux
+
+\sectionhead{Education}
+\entryhead{IPS Academy, Rajendra Nagar, Indore}{Jun 2023 --- Jun 2027}Bachelor of Technology - BTech in Computer Science
+
+\end{document}

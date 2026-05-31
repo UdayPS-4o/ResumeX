@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50:  #eef4ff;
+  --color-brand-100: #dbe6fe;
+  --color-brand-200: #bfd3fe;
+  --color-brand-300: #93b4fd;
+  --color-brand-400: #6090fa;
+  --color-brand-500: #3b6df6;
+  --color-brand-600: #2557eb;
+  --color-brand-700: #1d44d8;
+  --color-brand-800: #1e3aaf;
+  --color-brand-900: #1e347f;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  font-variation-settings: normal;
+  letter-spacing: -0.011em;
+}
+
+/* Custom scrollbars to feel native on Windows but stay subtle. */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: #9ca3af; background-clip: padding-box; border: 2px solid transparent; }
+
+/* Tiny utility for animated dots in the typing indicator. */
+@keyframes pulse-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.dot { animation: pulse-dot 1.2s ease-in-out infinite; display: inline-block; }
+.dot:nth-child(2) { animation-delay: 0.15s; }
+.dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* Slide-up entrance for new messages. */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-up { animation: slide-up 0.25s ease-out both; }
+
+/* Card elevation utilities — Tailwind's shadow-sm is too faint on light panels,
+   so these give cards a clearly visible lift with a soft slate-tinted shadow. */
+.card-elev {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+.card-elev-hover { transition: box-shadow 0.18s ease, border-color 0.18s ease; }
+.card-elev-hover:hover {
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08), 0 8px 20px rgba(15, 23, 42, 0.10);
+}
+
+/* TopCV-style filled fields — a flat fill with a single bottom underline that
+   lights up on focus, instead of a fully boxed border. */
+.field {
+  width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  padding: 0.5rem 0.625rem;
+  color: #0f172a;
+  background: #f1f5f9;                  /* slate-100 */
+  border: 0;
+  border-bottom: 2px solid #cbd5e1;     /* slate-300 */
+  border-radius: 0.375rem 0.375rem 0 0;
+  outline: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.field::placeholder { color: #94a3b8; }
+.field:hover { background: #e9eef4; }
+.field:focus {
+  background: #fff;
+  border-bottom-color: var(--color-brand-500);
+}
+
+/* Nested item rows (experience entries, etc.) — white so the filled fields read
+   clearly against them, with just a hairline ring to group each entry. */
+.form-subcard {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.09);
+  transition: box-shadow 0.18s ease;
+}
+.form-subcard:hover { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.14); }
+
+/* Gentle reveal when a collapsed section/item expands — the "bit of transition". */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal { animation: reveal 0.18s ease-out both; }
+
+/* Drag-and-drop visual states for the manual field editor. */
+.dnd-dragging { opacity: 0.45; }
+.dnd-over {
+  box-shadow: 0 0 0 2px var(--color-brand-500), 0 8px 20px rgba(37, 99, 235, 0.18);
+  border-color: transparent;
+}
+.grip { cursor: grab; }
+.grip:active { cursor: grabbing; }
+
+/* ── Rich-text editor ─────────────────────────────────────────────────────── */
+.rt {
+  border: 0;
+  border-bottom: 2px solid #cbd5e1;
+  border-radius: 0.375rem 0.375rem 0 0;
+  background: #f1f5f9;
+  overflow: hidden;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.rt:hover { background: #e9eef4; }
+.rt:focus-within {
+  background: #fff;
+  border-bottom-color: var(--color-brand-500);
+}
+.rt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.375rem;
+  background: transparent;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+.rt-hint {
+  margin-left: auto;
+  font-size: 10px;
+  color: #94a3b8;
+  padding-right: 0.25rem;
+}
+.rt-surface-wrap { position: relative; }
+.rt-surface {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #0f172a;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.rt-surface strong { font-weight: 700; }
+.rt-surface em { font-style: italic; }
+.rt-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #94a3b8;
+  pointer-events: none;
+}

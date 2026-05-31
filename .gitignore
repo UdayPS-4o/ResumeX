@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+dist/
+
+# Vendored LaTeX engine — installed per-machine by `npm run setup`
+backend/vendor/
+
+# Smoke-test artifacts
+backend/smoke-*.pdf
