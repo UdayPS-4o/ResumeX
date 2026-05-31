@@ -1,0 +1,20 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+dist/
+
+# Vendored Typst engine — installed per-machine by `npm run setup`
+backend/vendor/
+
+# SQLite database (server-side persisted state) — per-machine
+backend/data/
+
+# Smoke-test artifacts
+backend/smoke-*.pdf
+
+# Claude Code internal workspace — never commit
+.claude/
+
+.typst-temp/

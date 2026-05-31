@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+# Resumex web (Next.js). Multi-stage: build then run the production server.
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN npm ci
+RUN npm run build --prefix frontend
+
+FROM node:20-bookworm-slim AS runtime
+WORKDIR /app/frontend
+ENV NODE_ENV=production
+ENV PORT=3000
+COPY --from=build /app /app
+EXPOSE 3000
+CMD ["/app/node_modules/.bin/next", "start", "-p", "3000"]

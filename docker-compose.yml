@@ -1,0 +1,45 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    environment:
+      - PORT=8000
+      - COMPILE_MODE=auto
+    volumes:
+      - resumex_data:/app/backend/data
+    networks:
+      - internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1500m
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    environment:
+      - BACKEND_URL=http://api:8000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    networks:
+      - internal
+      - dokploy-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+
+volumes:
+  resumex_data:
+
+networks:
+  internal:
+    driver: bridge
+  dokploy-network:
+    external: true
