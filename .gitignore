@@ -1,6 +1,4 @@
 node_modules/
-.env
-.env.local
 .DS_Store
 *.log
 dist/
@@ -10,3 +8,9 @@ backend/vendor/
 
 # Smoke-test artifacts
 backend/smoke-*.pdf
+
+.claude/worktrees
+.typst-temp/
+.vscode/*
+.env
+.env.*

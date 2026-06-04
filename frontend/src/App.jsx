@@ -23,6 +23,13 @@ export default function App() {
   }, []);
 
   const hasKey = !!(settings.apiKeys?.[settings.provider]);
+  
+  useEffect(() => {
+    if (!hasKey) {
+      setShowSettings(true);
+    }
+  }, [hasKey]);
+
   const activeEntry = activeId ? resumeStore.get(activeId) : null;
 
   function refresh() { setResumes(resumeStore.list()); }

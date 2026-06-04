@@ -1,33 +1,25 @@
 #!/usr/bin/env node
-// Portable, offline LaTeX setup for Resumex.
+// Portable, offline compiler setup for Resumex.
 //
-// Downloads a self-contained Tectonic binary matching this machine's OS/arch
-// into backend/vendor/tectonic/, then warms its package cache by compiling
-// every template once. After this, the backend compiles fully offline — it
-// auto-detects the vendored binary (see backend/src/services/localCompiler.js),
-// so there are no machine-specific paths to configure.
+// Vendors the typst engine into backend/vendor/
 //
 // Usage:  node scripts/install-engine.mjs [--force] [--skip-warm] [--auto]
 //   --force      re-download even if a working binary is already vendored
-//   --skip-warm  install only; skip the (online, one-time) cache warm-up
-//   --auto       no-op-fast if already vendored; on a fresh install download +
-//                warm, but NEVER exit non-zero (so it can run as `predev`
-//                without blocking `npm run dev` when offline / rate-limited)
+//   --skip-warm  install only; skip template compile checks
+//   --auto       no-op-fast if already vendored
 
 import { spawnSync } from 'node:child_process';
-import { createWriteStream, existsSync } from 'node:fs';
-import { mkdir, mkdtemp, writeFile, rm, chmod } from 'node:fs/promises';
+import { createWriteStream, existsSync, readdirSync } from 'node:fs';
+import { mkdir, mkdtemp, writeFile, rm, chmod, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
-const VENDOR_DIR = join(REPO, 'backend', 'vendor', 'tectonic');
 const IS_WIN = process.platform === 'win32';
-const BIN = join(VENDOR_DIR, `tectonic${IS_WIN ? '.exe' : ''}`);
-const RELEASES_API =
-  'https://api.github.com/repos/tectonic-typesetting/tectonic/releases/latest';
+const TYPST_DIR = join(REPO, 'backend', 'vendor', 'typst');
+const TYPST_BIN = join(TYPST_DIR, `typst${IS_WIN ? '.exe' : ''}`);
 
 const args = new Set(process.argv.slice(2));
 const FORCE = args.has('--force');
@@ -35,7 +27,7 @@ const SKIP_WARM = args.has('--skip-warm');
 const AUTO = args.has('--auto');
 
 const log = (m) => console.log(m);
-// In --auto mode a failure must not abort `npm run dev`; degrade gracefully.
+
 class SetupError extends Error {}
 const die = (m) => {
   if (AUTO) throw new SetupError(m);
@@ -43,28 +35,9 @@ const die = (m) => {
   process.exit(1);
 };
 
-// ---- engine check ---------------------------------------------------------
 function runsOk(cmd) {
   const r = spawnSync(cmd, ['--version'], { stdio: 'pipe', timeout: 10_000 });
   return !r.error && r.status === 0 ? (r.stdout?.toString().trim() || 'ok') : null;
-}
-
-// ---- pick the right release asset for this platform/arch ------------------
-function pickAsset(assets) {
-  const platTok = IS_WIN ? 'windows' : process.platform === 'darwin' ? 'apple-darwin' : 'linux';
-  const archTok = process.arch === 'arm64' ? 'aarch64' : 'x86_64';
-  const archives = assets.filter(
-    (a) => /^tectonic-.*\.(zip|tar\.gz)$/.test(a.name) && a.name.includes(platTok),
-  );
-  const score = (a) => {
-    let s = 0;
-    if (a.name.includes(archTok)) s += 10;
-    else if (a.name.includes('x86_64')) s += 3; // e.g. Windows-on-ARM via emulation
-    if (IS_WIN && a.name.includes('msvc')) s += 2; // prefer msvc over gnu
-    if (process.platform === 'linux' && a.name.includes('gnu')) s += 2; // prefer gnu over musl
-    return s;
-  };
-  return archives.sort((a, b) => score(b) - score(a))[0] || null;
 }
 
 function renderProgress(received, total, done) {
@@ -82,7 +55,6 @@ function renderProgress(received, total, done) {
     }
     if (done) process.stdout.write('\n');
   } else if (done) {
-    // Non-TTY (e.g. piped logs): just one final line, no carriage-return spam.
     log(`  downloaded ${mb(received)}${total ? `/${mb(total)}` : ''} MB`);
   }
 }
@@ -95,7 +67,6 @@ async function download(url, dest) {
   if (!res.ok) throw new Error(`download failed: HTTP ${res.status}`);
   const total = Number(res.headers.get('content-length')) || 0;
 
-  // Stream to disk so we can report progress instead of buffering the whole file.
   if (!res.body) { await writeFile(dest, Buffer.from(await res.arrayBuffer())); return; }
   const out = createWriteStream(dest);
   const reader = res.body.getReader();
@@ -118,7 +89,7 @@ async function download(url, dest) {
   }
 }
 
-async function extract(archive, name, outDir) {
+async function extractAny(archive, name, outDir) {
   await mkdir(outDir, { recursive: true });
   let r;
   if (name.endsWith('.zip')) {
@@ -128,51 +99,63 @@ async function extract(archive, name, outDir) {
           { stdio: 'pipe' })
       : spawnSync('unzip', ['-o', archive, '-d', outDir], { stdio: 'pipe' });
   } else {
-    r = spawnSync('tar', ['-xzf', archive, '-C', outDir], { stdio: 'pipe' });
+    r = spawnSync('tar', ['-xf', archive, '-C', outDir], { stdio: 'pipe' });
   }
   if (r.error || r.status !== 0) {
     throw new Error(`extraction failed: ${r.error?.message || r.stderr?.toString() || 'unknown'}`);
   }
 }
 
-// Returns true if it freshly downloaded the binary, false if one was already present.
-async function install() {
-  if (!FORCE) {
-    const v = existsSync(BIN) && runsOk(BIN);
-    if (v) {
-      if (!AUTO) log(`✓ Engine already vendored: ${v}  (${BIN})`);
-      return false;
+function locateBin(root, binName) {
+  const stack = [root];
+  while (stack.length) {
+    const d = stack.pop();
+    let entries = [];
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      const p = join(d, e.name);
+      if (e.isFile() && e.name === binName) return p;
+      if (e.isDirectory()) stack.push(p);
     }
   }
-  if (AUTO) log('No local LaTeX engine vendored yet — installing Tectonic (one-time)…');
-  log(`Platform: ${process.platform}/${process.arch} — fetching latest Tectonic release…`);
-  const res = await fetch(RELEASES_API, {
-    headers: { 'user-agent': 'resumex-setup', accept: 'application/vnd.github+json' },
-  });
-  if (!res.ok) die(`GitHub API error: HTTP ${res.status} (rate-limited? try again later)`);
-  const release = await res.json();
-  const asset = pickAsset(release.assets || []);
-  if (!asset) die(`No Tectonic build found for ${process.platform}/${process.arch}.`);
+  return null;
+}
 
-  log(`Downloading ${asset.name} (${release.tag_name})…`);
-  const work = await mkdtemp(join(tmpdir(), 'resumex-engine-'));
+async function installTypst() {
+  if (!FORCE && existsSync(TYPST_BIN) && runsOk(TYPST_BIN)) {
+    if (!AUTO) log(`✓ Typst already vendored  (${TYPST_BIN})`);
+    return false;
+  }
+  const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64';
+  const asset = IS_WIN
+    ? `typst-${arch}-pc-windows-msvc.zip`
+    : process.platform === 'darwin'
+      ? `typst-${arch}-apple-darwin.tar.xz`
+      : `typst-${arch}-unknown-linux-musl.tar.xz`;
+  const url = `https://github.com/typst/typst/releases/latest/download/${asset}`;
+  if (AUTO) log('Vendoring the Typst engine (one-time)…');
+  log(`Downloading Typst (${asset})…`);
+  const work = await mkdtemp(join(tmpdir(), 'resumex-typst-'));
   try {
-    const archivePath = join(work, asset.name);
-    await download(asset.browser_download_url, archivePath);
-    await mkdir(VENDOR_DIR, { recursive: true });
-    await extract(archivePath, asset.name, VENDOR_DIR);
-    if (!IS_WIN) await chmod(BIN, 0o755);
+    const archivePath = join(work, asset);
+    await download(url, archivePath);
+    await extractAny(archivePath, asset, work);
+    const binName = `typst${IS_WIN ? '.exe' : ''}`;
+    const found = locateBin(work, binName);
+    if (!found) throw new Error('typst binary not found in the downloaded archive');
+    await mkdir(TYPST_DIR, { recursive: true });
+    await copyFile(found, TYPST_BIN);
+    if (!IS_WIN) await chmod(TYPST_BIN, 0o755);
   } finally {
     await rm(work, { recursive: true, force: true }).catch(() => {});
   }
-
-  const v = existsSync(BIN) && runsOk(BIN);
-  if (!v) die(`Binary did not run after install. Expected at ${BIN}`);
-  log(`✓ Installed ${v} → ${BIN}`);
+  if (!(existsSync(TYPST_BIN) && runsOk(TYPST_BIN))) {
+    throw new Error(`Typst did not run after install (expected ${TYPST_BIN})`);
+  }
+  log(`✓ Installed Typst → ${TYPST_BIN}`);
   return true;
 }
 
-// ---- warm the package cache by compiling every template ------------------
 const SAMPLE = {
   name: 'Ada Lovelace', headline: 'Mathematician & Computing Pioneer',
   contact: { email: 'ada@example.com', phone: '+44 20 7946 0000', location: 'London, UK',
@@ -195,47 +178,47 @@ const SAMPLE = {
 };
 
 async function warm() {
-  log('\nWarming the package cache (one-time online step)…');
-  const { listTemplates, renderTemplate } = await import('@resumex/renderer');
-  const dir = await mkdtemp(join(tmpdir(), 'resumex-warm-'));
+  if (!(existsSync(TYPST_BIN) && runsOk(TYPST_BIN))) {
+    log('\n(Typst not vendored — skipping template check.)');
+    return;
+  }
+  log('\nVerifying templates compile with Typst…');
+  const { listTemplates, renderTemplate, getSeed } = await import('@resumex/renderer');
+  const tempDirRoot = join(REPO, '.typst-temp');
+  await mkdir(tempDirRoot, { recursive: true }).catch(() => {});
+  const dir = await mkdtemp(join(tempDirRoot, 'resumex-warm-'));
   let ok = 0, fail = 0;
   try {
     for (const t of listTemplates()) {
-      const texFile = join(dir, `${t.id}.tex`);
-      await writeFile(texFile, renderTemplate(t.id, SAMPLE), 'utf8');
-      const r = spawnSync(BIN, ['--chatter', 'minimal', '--outdir', dir, texFile],
-        { cwd: dir, stdio: 'pipe', timeout: 300_000 });
+      const file = join(dir, `${t.id}.typ`);
+      await writeFile(file, renderTemplate(t.id, getSeed(t.id) || SAMPLE), 'utf8');
+      const r = spawnSync(TYPST_BIN, ['compile', '--root', REPO, file, join(dir, `${t.id}.pdf`)],
+        { cwd: dir, stdio: 'pipe', timeout: 120_000 });
       if (existsSync(join(dir, `${t.id}.pdf`))) { log(`  ✓ ${t.id}`); ok++; }
       else { log(`  ✗ ${t.id}: ${(r.stderr?.toString() || '').split('\n').filter(Boolean).slice(-2).join(' ')}`); fail++; }
     }
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
-  log(`Cache warm: ${ok} ok, ${fail} failed.`);
-  if (fail) log('  (Failed templates will retry on first real compile — needs internet that once.)');
+  log(`Template check: ${ok} ok, ${fail} failed.`);
 }
 
-// ---- run ------------------------------------------------------------------
 try {
-  const fresh = await install();
-
-  // In --auto (predev) mode, never warm on a no-op startup — only right after a
-  // fresh download, so day-to-day `npm run dev` stays instant.
-  const shouldWarm = !SKIP_WARM && (!AUTO || fresh);
-  if (shouldWarm) {
+  const typstFresh = await installTypst();
+  const shouldCheck = !SKIP_WARM && (!AUTO || typstFresh);
+  if (shouldCheck) {
     try { await warm(); }
-    catch (e) { log(`\n! Cache warm-up skipped: ${e.message}\n  First compile per template will fetch packages online once.`); }
+    catch (e) { log(`\n! Template check skipped: ${e.message}`); }
   } else if (!AUTO) {
-    log('\nSkipped cache warm-up (--skip-warm). First compile of each template needs internet once.');
+    log('\nSkipped template check (--skip-warm).');
   }
 
-  if (fresh || !AUTO) {
-    log('\n✓ Done. The backend auto-detects the vendored engine — start it with `npm run dev`.');
-    log('  Verify: GET http://localhost:8000/api/health → "compile":{"mode":"local","engine":"tectonic"}');
+  if (typstFresh || !AUTO) {
+    log('\n✓ Done. Templates compile via Typst.');
+    log('  Verify: GET http://localhost:8000/api/health → "compile": { "typst": true }');
   }
 } catch (e) {
-  // AUTO mode: degrade gracefully so the dev server still starts.
-  log(`\n! LaTeX engine auto-install skipped: ${e.message}`);
+  log(`\n! Engine auto-install skipped: ${e.message}`);
   log('  Resumex will start anyway. Run `npm run setup` (or `npm run install-engine`) once you have internet');
-  log('  to compile resumes offline; until then compiles need internet or will fail in local-only mode.');
+  log('  to compile resumes offline.');
 }

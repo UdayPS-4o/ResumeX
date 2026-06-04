@@ -26,7 +26,7 @@ jobs:
       - run: npm run build --if-present
 
   compile-smoke:
-    name: render + Tectonic-compile every template
+    name: render + Typst-compile every template
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +35,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # Downloads Tectonic, then renders + compiles every template once.
+      # Downloads Typst, then renders + compiles every template once.
       # This is the regression gate for the renderer (catches template breakage).
       - run: node scripts/install-engine.mjs --force

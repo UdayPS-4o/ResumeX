@@ -52,11 +52,13 @@ export const api = {
     return r.json(); // { seed }
   },
 
-  async compile(latex, { trim = true } = {}) {
+  // Compile a rendered document to a PDF blob. `format` ('typst' | 'latex')
+  // tells the backend which engine to use; templates render Typst by default.
+  async compile(source, { trim = true, format = 'typst' } = {}) {
     const r = await fetch('/api/compile', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ latex, trim }),
+      body: JSON.stringify({ source, format, trim }),
     });
     if (!r.ok) throw new Error(await readError(r));
     return r.blob();

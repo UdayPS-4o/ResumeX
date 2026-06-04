@@ -10,6 +10,7 @@ const BREAKDOWN_KEYS = [
   'Employment dates',
   'Skills / keywords',
   'Conciseness',
+  'Writing quality',
 ];
 
 // A fully-populated resume that should score high.
@@ -113,9 +114,10 @@ test('total max weighting is 100', () => {
 
 test('gradeFor thresholds', () => {
   assert.equal(gradeFor(85), 'Excellent');
-  assert.equal(gradeFor(70), 'Good');
-  assert.equal(gradeFor(50), 'Needs work');
-  assert.equal(gradeFor(49), 'Poor');
+  assert.equal(gradeFor(68), 'Good');
+  assert.equal(gradeFor(67), 'Needs work');
+  assert.equal(gradeFor(48), 'Needs work');
+  assert.equal(gradeFor(47), 'Poor');
   assert.equal(gradeFor(0), 'Poor');
 });
 
@@ -194,6 +196,20 @@ test('matchKeywords distinguishes present vs missing skills', () => {
 test('matchKeywords returns null for an empty job description', () => {
   assert.equal(matchKeywords(FULL_RESUME, ''), null);
   assert.equal(matchKeywords(FULL_RESUME, '   '), null);
+});
+
+test('skill synonyms match (PostgreSQL ↔ Postgres, Node ↔ Node.js)', () => {
+  const resume = { skills: [{ items: ['PostgreSQL', 'Node.js'] }] };
+  const m = matchKeywords(resume, 'Looking for Postgres and Node experience.');
+  assert.ok(m.matchedSkills.includes('postgres'), 'PostgreSQL should satisfy a Postgres requirement');
+  assert.ok(!m.missingSkills.includes('postgres'));
+});
+
+test('generic action verbs are not extracted as keywords', () => {
+  const { all } = extractJdKeywords('You will build, design, and maintain scalable services.');
+  for (const noise of ['build', 'design', 'maintain', 'scalable']) {
+    assert.ok(!all.includes(noise), `"${noise}" should be filtered out of keywords`);
+  }
 });
 
 // ── JD-aware scoring mode ───────────────────────────────────────────────────

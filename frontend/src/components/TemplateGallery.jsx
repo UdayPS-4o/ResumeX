@@ -86,7 +86,7 @@ function TemplateChoice({ t, active, previewResume, canPrewarm, onSelect, onPrew
           : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
       }`}
     >
-      <div className="relative bg-white border-b border-slate-100" style={{ aspectRatio: '816 / 1056' }}>
+      <div className="relative bg-white border-b border-slate-100" style={{ aspectRatio: '794 / 1123' }}>
         <ResumePreview resume={previewResume} template={t.id} className="w-full h-full" />
 
         {/* Hover affordance + Current badge */}
