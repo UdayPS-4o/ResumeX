@@ -23,6 +23,10 @@ export const STOPWORDS = new Set([
   'new','well','able','looking','seeking','join','across','within','related','various','etc',
   'including','knowledge','understanding','skills','skill','proficiency','proficient','familiar',
   'familiarity','demonstrated','proven','track','record','degree','field','similar','relevant',
+  // generic action/filler words that pollute keyword extraction
+  'build','building','scalable','maintain','maintaining','deliver','delivering','drive','driving',
+  'develop','developing','manage','managing','create','creating','design','designing','collaborate',
+  'collaborating','responsible','tasked','duties','must','want','need','needs','hiring','hire',
 ]);
 
 const WORD_RE = /[a-z0-9][a-z0-9+.#-]*/gi;

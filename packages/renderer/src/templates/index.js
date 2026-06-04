@@ -1,23 +1,27 @@
-import { renderJake, META as jakeMeta } from './jake.js';
-import { renderClassic, META as classicMeta } from './classic.js';
-import { renderCompact, META as compactMeta } from './compact.js';
-import { renderUday, META as udayMeta, SEED_RESUME as udaySeed } from './uday.js';
-import { renderExecutive, META as executiveMeta, SEED_RESUME as executiveSeed } from './executive.js';
+import { renderJake, META as jakeMeta } from './typst/jake.js';
+import { renderClassic, META as classicMeta } from './typst/classic.js';
+import { renderCompact, META as compactMeta } from './typst/compact.js';
+import { renderModern, META as modernMeta, SEED_RESUME as modernSeed } from './typst/modern.js';
+import { renderExecutive, META as executiveMeta, SEED_RESUME as executiveSeed } from './typst/executive.js';
+import { renderNeat, META as neatMeta } from './typst/neat.js';
+import { renderDeedy, META as deedyMeta } from './typst/deedy.js';
+import { renderAlta, META as altaMeta } from './typst/alta.js';
+import { renderMinimalist, META as minimalistMeta } from './typst/minimalist.js';
+import { renderAttractive, META as attractiveMeta } from './typst/attractive.js';
 
-// The template formerly called "uday" is now the app's "Modern" layout. The old
-// generic accent-bar modern.js is retired (kept on disk but no longer registered).
-const modernMeta = {
-  ...udayMeta,
-  name: 'Modern',
-  description: 'Bold colored name with rule-separated sections — clean and contemporary.',
-};
-
+// Every template now renders **Typst** (each META carries `format: 'typst'`) and
+// compiles via the Typst engine.
 export const TEMPLATES = {
   jake: { meta: jakeMeta, render: renderJake },
-  modern: { meta: modernMeta, render: renderUday, seed: udaySeed },
   classic: { meta: classicMeta, render: renderClassic },
+  minimalist: { meta: minimalistMeta, render: renderMinimalist },
   compact: { meta: compactMeta, render: renderCompact },
   executive: { meta: executiveMeta, render: renderExecutive, seed: executiveSeed },
+  modern: { meta: modernMeta, render: renderModern, seed: modernSeed },
+  alta: { meta: altaMeta, render: renderAlta },
+  neat: { meta: neatMeta, render: renderNeat },
+  deedy: { meta: deedyMeta, render: renderDeedy },
+  attractive: { meta: attractiveMeta, render: renderAttractive },
 };
 
 // Deprecated alias: "uday" was renamed to "modern". Both ids map to the same
@@ -45,4 +49,9 @@ export function renderTemplate(id, resume, opts = {}) {
     throw err;
   }
   return t.render(resume, opts);
+}
+
+// The engine a template renders for ('typst') — drives compile dispatch.
+export function getFormat(id) {
+  return TEMPLATES[resolve(id)]?.meta?.format || 'typst';
 }

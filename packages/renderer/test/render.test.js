@@ -7,7 +7,7 @@ import {
   getSeed,
   TEMPLATES,
 } from '../src/index.js';
-import { tex, mdTex, dateRange, joinTex, hrefTex, sectionTitle, orderSections } from '../src/latex.js';
+import { sectionTitle, orderSections } from '../src/typst.js';
 
 const SAMPLE = {
   name: 'Ada Lovelace',
@@ -66,17 +66,23 @@ const SAMPLE = {
   ],
 };
 
-const ALL_IDS = ['jake', 'modern', 'classic', 'compact', 'executive'];
+const ALL_IDS = ['jake', 'modern', 'classic', 'compact', 'executive', 'neat', 'deedy', 'alta', 'minimalist'];
 
 for (const id of ALL_IDS) {
-  test(`renderTemplate("${id}") produces a valid LaTeX document`, () => {
+  test(`renderTemplate("${id}") produces a valid Typst document`, () => {
     const out = renderTemplate(id, SAMPLE);
     assert.equal(typeof out, 'string');
     assert.ok(out.length > 0, 'output should be non-empty');
-    assert.ok(out.includes('\\documentclass'), 'output should contain \\documentclass');
-    assert.ok(out.includes('\\begin{document}'), 'output should open a document');
-    assert.ok(out.includes('\\end{document}'), 'output should close a document');
-    assert.ok(out.includes('Ada Lovelace'), 'output should contain the sample name');
+    assert.ok(
+      out.includes('#set document(') || out.includes('cv.with('),
+      'output should set document configuration'
+    );
+    assert.ok(
+      out.includes('#set page(') || out.includes('paper-size:') || out.includes('pageSize:'),
+      'output should set page configuration'
+    );
+    const hasName = out.includes('Ada Lovelace') || (out.includes('Ada') && out.includes('Lovelace'));
+    assert.ok(hasName, 'output should contain the sample name');
   });
 }
 
@@ -121,32 +127,6 @@ test('TEMPLATES registry exposes render functions', () => {
 
 // ── helper sanity ────────────────────────────────────────────────────────────
 
-test('tex() escapes LaTeX special characters', () => {
-  assert.equal(tex('100% & $5'), '100\\% \\& \\$5');
-  assert.equal(tex(undefined), '');
-  assert.equal(tex(null), '');
-});
-
-test('mdTex() converts inline markdown to LaTeX', () => {
-  assert.equal(mdTex('a **bold** word'), 'a \\textbf{bold} word');
-  assert.equal(mdTex('an *italic* word'), 'an \\textit{italic} word');
-});
-
-test('dateRange() formats both, one, or neither side', () => {
-  assert.equal(dateRange('2022', '2024'), '2022 -- 2024');
-  assert.equal(dateRange('2022', ''), '2022');
-  assert.equal(dateRange('', '2024'), '2024');
-  assert.equal(dateRange('', ''), '');
-});
-
-test('joinTex() skips empties and escapes', () => {
-  assert.equal(joinTex(['a', '', 'b&c']), 'a \\textbar{} b\\&c');
-});
-
-test('hrefTex() builds a clickable link', () => {
-  assert.equal(hrefTex('https://x.com'), '\\href{https://x.com}{x.com}');
-  assert.equal(hrefTex(''), '');
-});
 
 test('sectionTitle() honors overrides then fallback then default', () => {
   assert.equal(sectionTitle({ sectionTitles: { summary: 'Profile' } }, 'summary', 'Summary'), 'Profile');

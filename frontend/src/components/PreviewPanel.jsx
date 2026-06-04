@@ -3,20 +3,6 @@ import PdfViewer from './PdfViewer.jsx';
 export default function PreviewPanel({ pdfUrl, compiling, error, empty, onRetry, onDownload }) {
   return (
     <div className="flex flex-col h-full bg-slate-100 relative">
-      {/* Status strip */}
-      {compiling && (
-        <div className="flex items-center justify-between px-4 py-1.5 bg-amber-50 border-b border-amber-100 text-xs text-amber-700 z-10">
-          <span className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Compiling…
-          </span>
-          {onRetry && (
-            <button onClick={onRetry} className="flex items-center gap-1 hover:text-amber-900 transition" title="Recompile">
-              <RefreshIcon /> Refresh
-            </button>
-          )}
-        </div>
-      )}
 
       <div className="flex-1 min-h-0">
         {empty && !error && <div className="p-4 h-full"><EmptyState /></div>}
@@ -36,7 +22,7 @@ export default function PreviewPanel({ pdfUrl, compiling, error, empty, onRetry,
 }
 
 // A shimmering resume-shaped placeholder shown while the first PDF compiles.
-// Mirrors the real PdfViewer geometry — a full-width, top-aligned Letter page
+// Mirrors the real PdfViewer geometry — a full-width, top-aligned A4 page
 // on the same surface — so the layout doesn't jump when the PDF swaps in.
 function ResumeSkeleton() {
   const Bar = ({ w, h = 'h-2', tone = 'bg-slate-200' }) => (
@@ -55,8 +41,8 @@ function ResumeSkeleton() {
     // Same scroll surface (bg + padding) as PdfViewer, so nothing shifts on swap.
     <div className="h-full overflow-auto bg-slate-200/60 px-3 py-3">
       <div
-        className="mx-auto w-full max-w-[816px] bg-white rounded-lg shadow-md ring-1 ring-slate-200 overflow-hidden"
-        style={{ aspectRatio: '816 / 1056' }}
+        className="mx-auto w-full max-w-[794px] bg-white rounded-lg shadow-md ring-1 ring-slate-200 overflow-hidden"
+        style={{ aspectRatio: '794 / 1123' }}
       >
         <div className="animate-pulse px-9 py-8 space-y-5 h-full">
           {/* header: name / headline / contact */}

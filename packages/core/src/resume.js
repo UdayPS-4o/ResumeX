@@ -359,3 +359,38 @@ export function undoCardPatch(resume, undo) {
 
   return next;
 }
+
+// Walks a patch object and wraps any strings matching an edit's `after` text in ++...++ markers.
+export function highlightCardPatch(patch, edits) {
+  if (!patch || !edits || !edits.length) return patch;
+  
+  const highlighted = JSON.parse(JSON.stringify(patch));
+  const stringsToHighlight = edits
+    .filter(e => (e.kind === 'add' || e.kind === 'revise') && typeof e.after === 'string' && e.after.trim().length > 0)
+    .map(e => e.after);
+
+  if (stringsToHighlight.length === 0) return patch;
+
+  function walk(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (typeof val === 'string') {
+        if (stringsToHighlight.includes(val)) {
+          obj[key] = `++${val}++`;
+        }
+      } else if (Array.isArray(val)) {
+        for (let i = 0; i < val.length; i++) {
+          if (typeof val[i] === 'string' && stringsToHighlight.includes(val[i])) {
+            val[i] = `++${val[i]}++`;
+          }
+        }
+      } else if (typeof val === 'object') {
+        walk(val);
+      }
+    }
+  }
+
+  walk(highlighted);
+  return highlighted;
+}

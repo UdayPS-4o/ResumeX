@@ -4,16 +4,13 @@ FROM node:20-bookworm-slim AS build
 WORKDIR /app
 COPY . .
 RUN npm ci
-# Vendor the offline LaTeX engine. If the download fails at build time the
-# image still runs (COMPILE_MODE=auto falls back to online compilers).
+# Vendor the offline Typst engine.
 RUN node scripts/install-engine.mjs --skip-warm || true
 
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8000
-# auto = use the vendored Tectonic if present, else fall back to online compilers
-ENV COMPILE_MODE=auto
 COPY --from=build /app /app
 EXPOSE 8000
 CMD ["node", "apps/api/src/server.js"]

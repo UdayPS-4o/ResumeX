@@ -10,3 +10,6 @@ backend/vendor/
 
 # Smoke-test artifacts
 backend/smoke-*.pdf
+
+.claude/worktrees
+.typst-temp/

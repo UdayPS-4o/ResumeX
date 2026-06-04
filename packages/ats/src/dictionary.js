@@ -71,13 +71,29 @@ export const WEAK_OPENERS = [
 
 // Overused clichés / buzzwords recruiters and ATS scoring tools flag as filler.
 export const BUZZWORDS = [
+  // self-description clichés
   'team player','hard worker','hard-working','hardworking','detail-oriented','detail oriented',
   'go-getter','self-starter','self starter','results-driven','results driven','results-oriented',
   'think outside the box','synergy','synergize','go-to person','dynamic','proactive','motivated',
   'passionate','enthusiastic','fast learner','quick learner','goal-oriented','people person',
   'best of breed','value add','value-add','seasoned','guru','ninja','rockstar','wheelhouse',
   'hit the ground running','win-win','results oriented','track record of success',
+  // empty corporate adjectives (Resume Worded / Enhancv flag these under style/tone)
+  'cutting-edge','cutting edge','bleeding-edge','seamless','seamlessly','world-class','world class',
+  'best-in-class','best in class','state-of-the-art','state of the art','next-generation',
+  'game-changer','game changer','game-changing','revolutionary','disruptive','innovative',
+  'robust','holistic','mission-critical','turnkey','top-notch','outside the box',
 ];
+
+// Vague filler that adds length without specificity (flagged under writing tone).
+export const FILLER = [
+  'various','etc','utilize','utilized','utilizing','leverage','leveraging','numerous','myriad',
+  'plethora','things','stuff','a lot','lots of','in order to','basically','literally','really',
+  'very','responsible for handling','tasked with','a number of',
+];
+
+// First-person pronouns. Résumés use *implied* first person ("Built…", not "I built…").
+export const FIRST_PERSON = new Set(['i', 'me', 'my', 'mine', 'myself', 'we', 'our', 'ours', 'us']);
 
 // Leading adverbs to strip before checking a bullet's first verb
 // ("Successfully led" → "led", "Independently built" → "built").
