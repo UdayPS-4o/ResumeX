@@ -3,5 +3,4 @@
 export { complete, streamComplete, PROVIDERS, resolveKey } from './providers/index.js';
 export { buildSystemPrompt, buildImportPrompt, RESUME_DELIM } from './prompts/builder.js';
 export { buildAtsPrompt } from './prompts/ats.js';
-export { buildJobMatchPrompt } from './prompts/jobMatch.js';
 export { parseModelJson } from './parse.js';

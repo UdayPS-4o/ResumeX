@@ -6,8 +6,8 @@ import AtsModal from './AtsModal.jsx';
 import TemplateGallery from './TemplateGallery.jsx';
 import { api } from '../lib/api.js';
 import { emptyResume } from '../lib/storage.js';
-import { runAtsChecks } from '../lib/ats.js';
-import { mergeResume, diffResume, hasContent, splitChangesIntoCards, applyCardPatch, invertCardPatch, undoCardPatch } from '../lib/resume.js';
+import { runAtsChecks } from '@resumex/ats';
+import { mergeResume, diffResume, hasContent, splitChangesIntoCards, applyCardPatch, invertCardPatch, undoCardPatch } from '@resumex/core';
 import { usePdfCompiler } from '../lib/usePdfCompiler.js';
 
 const GREETING = {
@@ -540,7 +540,7 @@ export default function Editor({
       </div>
 
       {showAts && (
-        <AtsModal settings={settings} resume={resume} localResult={ats} onClose={() => setShowAts(false)} />
+        <AtsModal settings={settings} resume={resume} onClose={() => setShowAts(false)} />
       )}
     </div>
   );
