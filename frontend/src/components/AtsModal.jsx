@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { runAtsChecks } from '@resumex/ats';
 import { api } from '../lib/api.js';
 
-export default function AtsModal({ settings, resume, localResult, onClose }) {
+export default function AtsModal({ settings, resume, onClose }) {
   const apiKey = settings.apiKeys?.[settings.provider];
   const [jd, setJd] = useState('');
   const [loading, setLoading] = useState(false);
-  // Show the deterministic score instantly; enrich with LLM advice when available.
-  const [result, setResult] = useState(localResult || null);
+  const [llm, setLlm] = useState(null);   // optional LLM enrichment, layered on top
   const [error, setError] = useState(null);
 
+  // Deterministic score + keyword match, recomputed instantly as the JD changes.
+  // No API key needed — this is the authoritative, offline ATS analysis.
+  const det = useMemo(() => runAtsChecks(resume, { jobDescription: jd }), [resume, jd]);
+  const result = useMemo(() => ({ ...det, llm }), [det, llm]);
+
   async function run() {
-    if (!apiKey) return; // deterministic score already shown; LLM enrichment needs a key
+    if (!apiKey) return; // deterministic score already shown; only LLM advice needs a key
     setLoading(true);
     setError(null);
     try {
@@ -21,7 +26,8 @@ export default function AtsModal({ settings, resume, localResult, onClose }) {
         resume,
         jobDescription: jd,
       });
-      setResult(r);
+      setLlm(r.llm && !r.llm.error ? r.llm : null);
+      if (r.llm?.error) setError(`AI suggestions unavailable: ${r.llm.error}`);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -29,7 +35,7 @@ export default function AtsModal({ settings, resume, localResult, onClose }) {
     }
   }
 
-  // Fetch LLM enrichment on open (if a key is set). The score is already visible.
+  // Fetch optional LLM enrichment on open (if a key is set). Score is already visible.
   useEffect(() => { run(); /* eslint-disable-line */ }, []);
 
   return (
@@ -47,7 +53,7 @@ export default function AtsModal({ settings, resume, localResult, onClose }) {
           {error && (
             <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700 mb-3">{error}</div>
           )}
-          {result && <Results result={result} />}
+          <Results result={result} />
           {loading && (
             <div className="flex items-center gap-2 text-xs text-slate-400 mt-3">
               <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
@@ -55,28 +61,31 @@ export default function AtsModal({ settings, resume, localResult, onClose }) {
             </div>
           )}
 
-          {/* Optional JD targeting */}
+          {/* JD targeting — drives the deterministic keyword match (no key needed). */}
           <div className="mt-5 pt-4 border-t border-slate-100">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Target a specific job (optional)
+              Target a specific job
             </label>
-            {!apiKey && (
-              <p className="text-[11px] text-amber-600 mt-1">Add an API key in Settings to get AI keyword suggestions tailored to a job.</p>
-            )}
+            <p className="text-[11px] text-slate-500 mt-1">
+              Paste a job description to score keyword match instantly — free, no API key.
+              {!apiKey && ' Add a key in Settings for AI reframing tips on top.'}
+            </p>
             <textarea
               value={jd}
               onChange={e => setJd(e.target.value)}
               rows={3}
-              placeholder="Paste a job description to get keyword-tailored ATS advice…"
+              placeholder="Paste a job description to see which keywords you're missing…"
               className="mt-2 w-full resize-none px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
-            <button
-              onClick={run}
-              disabled={loading || !apiKey}
-              className="mt-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Scoring…' : jd.trim() ? 'Re-score for this job' : 'Get AI suggestions'}
-            </button>
+            {apiKey && (
+              <button
+                onClick={run}
+                disabled={loading}
+                className="mt-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Scoring…' : 'Get AI suggestions'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -87,7 +96,7 @@ export default function AtsModal({ settings, resume, localResult, onClose }) {
 const RING = { Excellent: 'text-emerald-600', Good: 'text-emerald-600', 'Needs work': 'text-amber-600', Poor: 'text-rose-600' };
 
 function Results({ result }) {
-  const { score, grade, breakdown = [], issues = [], passed = [], llm } = result;
+  const { score, grade, breakdown = [], issues = [], passed = [], keywords, llm } = result;
   return (
     <div className="space-y-5">
       {/* Score header */}
@@ -99,6 +108,9 @@ function Results({ result }) {
           {llm?.verdict && <div className="text-xs text-slate-600 mt-1 max-w-sm">{llm.verdict}</div>}
         </div>
       </div>
+
+      {/* Keyword match vs. the job description (deterministic) */}
+      {keywords && <KeywordMatch keywords={keywords} />}
 
       {/* Breakdown bars */}
       <div className="space-y-2">
@@ -135,7 +147,7 @@ function Results({ result }) {
 
       {/* LLM keyword suggestions */}
       {llm?.keywordSuggestions?.length > 0 && (
-        <Section title="Keywords to consider adding">
+        <Section title="AI: keywords to consider adding">
           <div className="flex flex-wrap gap-1.5">
             {llm.keywordSuggestions.map((k, i) => (
               <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-brand-50 border border-brand-200 text-brand-800">{k}</span>
@@ -145,7 +157,7 @@ function Results({ result }) {
       )}
 
       {llm?.topFixes?.length > 0 && (
-        <Section title="Highest-impact changes">
+        <Section title="AI: highest-impact changes">
           <ul className="space-y-1 text-sm text-slate-700 list-disc pl-5">
             {llm.topFixes.map((f, i) => <li key={i}>{f}</li>)}
           </ul>
@@ -165,6 +177,47 @@ function Results({ result }) {
         </Section>
       )}
     </div>
+  );
+}
+
+function KeywordMatch({ keywords }) {
+  const { percent, matched = [], missing = [], missingSkills = [] } = keywords;
+  const tone = percent >= 70 ? 'text-emerald-600' : percent >= 45 ? 'text-amber-600' : 'text-rose-600';
+  return (
+    <Section title="Job description keyword match">
+      <div className="rounded-xl border border-slate-200 p-3.5 space-y-3">
+        <div className="flex items-baseline gap-2">
+          <span className={`text-2xl font-bold tabular-nums ${tone}`}>{percent}%</span>
+          <span className="text-xs text-slate-500">{matched.length} of {matched.length + missing.length} keywords found</span>
+        </div>
+        {missing.length > 0 ? (
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              Missing — add these {missingSkills.length > 0 && '(skills first)'}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {missing.slice(0, 24).map((k, i) => (
+                <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${i < missingSkills.length ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>{k}</span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-emerald-700">Every keyword from the job description appears in your resume. 🎯</div>
+        )}
+        {matched.length > 0 && (
+          <details className="group">
+            <summary className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-slate-600 select-none">
+              {matched.length} matched
+            </summary>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {matched.slice(0, 30).map((k, i) => (
+                <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">{k}</span>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    </Section>
   );
 }
 
