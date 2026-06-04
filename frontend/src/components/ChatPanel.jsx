@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { fileToImagePart } from '../lib/image.js';
+import { useDropzone, usePaste } from 'clipboard-drop/react';
 
 export default function ChatPanel({ messages, sending, onSend, onInsert, onUndo, onDismiss, onRetry, onImportFile, onOptimize, placeholder }) {
   const [draft, setDraft] = useState('');
   const [images, setImages] = useState([]); // [{mime, data, dataUrl}]
-  const [dragOver, setDragOver] = useState(false);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const fileRef = useRef(null);
   const prevCount = useRef(0);
-  const dragDepth = useRef(0); // dragenter/leave fire per child — count to avoid flicker
 
   // Auto-scroll only when a new message arrives or while a reply is pending —
   // NOT on in-place updates (e.g. applying/undoing a suggestion card), which
@@ -32,15 +31,6 @@ export default function ChatPanel({ messages, sending, onSend, onInsert, onUndo,
     }
   }
 
-  function onPaste(e) {
-    const items = Array.from(e.clipboardData?.items || []);
-    const files = items.filter(i => i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
-    if (files.length) {
-      e.preventDefault();
-      addFiles(files);
-    }
-  }
-
   // Documents (PDF/DOCX/TXT) are imported as résumé source; images are attached.
   const isDocFile = (f) =>
     f.type === 'application/pdf' ||
@@ -57,22 +47,27 @@ export default function ChatPanel({ messages, sending, onSend, onInsert, onUndo,
     if (imgs.length) addFiles(imgs);
   }
 
-  function onDragEnter(e) {
-    e.preventDefault();
-    dragDepth.current += 1;
-    setDragOver(true);
-  }
-  function onDragLeave(e) {
-    e.preventDefault();
-    dragDepth.current = Math.max(0, dragDepth.current - 1);
-    if (dragDepth.current === 0) setDragOver(false);
-  }
-  function onDrop(e) {
-    e.preventDefault();
-    dragDepth.current = 0;
-    setDragOver(false);
-    handleFiles(e.dataTransfer?.files);
-  }
+  const { getRootProps, isDragging: dragOver } = useDropzone({
+    accept: ["image/*", "application/pdf", "text/plain", ".docx", ".doc"],
+    multiple: true,
+    onDrop: (files) => {
+      handleFiles(files);
+    }
+  });
+
+  const { ref: dropzoneRef } = getRootProps();
+
+  const pasteRef = usePaste((data) => {
+    if (data.images.length) {
+      data.preventDefault();
+      addFiles(data.images);
+    }
+  });
+
+  const setCombinedTextareaRef = (el) => {
+    textareaRef.current = el;
+    pasteRef(el);
+  };
 
   function submit() {
     if ((!draft.trim() && images.length === 0) || sending) return;
@@ -94,11 +89,8 @@ export default function ChatPanel({ messages, sending, onSend, onInsert, onUndo,
 
   return (
     <div
+      ref={dropzoneRef}
       className="flex flex-col h-full relative"
-      onDragEnter={onDragEnter}
-      onDragOver={e => { e.preventDefault(); }}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
     >
       <header className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
         <div>
@@ -151,11 +143,10 @@ export default function ChatPanel({ messages, sending, onSend, onInsert, onUndo,
 
         <div className="relative rounded-xl border border-slate-200 bg-white shadow-sm focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition">
           <textarea
-            ref={textareaRef}
+            ref={setCombinedTextareaRef}
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
-            onPaste={onPaste}
             placeholder={placeholder}
             rows={2}
             className="w-full resize-none px-3 py-2.5 pr-20 text-sm bg-transparent rounded-xl outline-none placeholder:text-slate-400"
@@ -265,41 +256,50 @@ function Message({ message, onInsert, onUndo, onDismiss, onRetry, onOptimize, se
 
       {!isUser && sug && cards.length > 0 && (
         <div className="ml-9 mt-2 w-[85%] space-y-3">
-          {cards.map((card) => (
-            <SuggestionCard
-              key={card.id}
-              suggestion={{
-                ...card,
-                applied: isCardApplied(card),
-                dismissed: sug.dismissedCards?.[card.id] || sug.dismissed,
-                canUndo: !!sug.appliedCards?.[card.id]?.undo,
-              }}
-              onInsert={() => onInsert?.(messageIndex, card.id)}
-              onUndo={() => onUndo?.(messageIndex, card.id)}
-              onDismiss={() => onDismiss?.(messageIndex, card.id)}
-            />
-          ))}
+          {/* A verbatim import applies every section at once. Show a single
+              "Added to your resume" confirmation instead of one card per item.
+              An Undo splits it back into per-section cards to cherry-pick. */}
+          {sug.imported && unapplied.length === 0 ? (
+            <ImportedConfirmation onUndo={() => onUndo?.(messageIndex)} />
+          ) : (
+            <>
+              {cards.map((card) => (
+                <SuggestionCard
+                  key={card.id}
+                  suggestion={{
+                    ...card,
+                    applied: isCardApplied(card),
+                    dismissed: sug.dismissedCards?.[card.id] || sug.dismissed,
+                    canUndo: !!sug.appliedCards?.[card.id]?.undo,
+                  }}
+                  onInsert={() => onInsert?.(messageIndex, card.id)}
+                  onUndo={() => onUndo?.(messageIndex, card.id)}
+                  onDismiss={() => onDismiss?.(messageIndex, card.id)}
+                />
+              ))}
 
-          {(showInsertAll || showUndoAll) && (
-            <div className="flex justify-end gap-3 pr-1">
-              {showUndoAll && (
-                <button
-                  onClick={() => onUndo?.(messageIndex)}
-                  className="text-xs font-medium text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-slate-100 transition"
-                >
-                  Undo all
-                </button>
+              {(showInsertAll || showUndoAll) && (
+                <div className="flex justify-end gap-3 pr-1">
+                  {showUndoAll && (
+                    <button
+                      onClick={() => onUndo?.(messageIndex)}
+                      className="text-xs font-medium text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-slate-100 transition"
+                    >
+                      Undo all
+                    </button>
+                  )}
+                  {showInsertAll && (
+                    <button
+                      onClick={() => onInsert?.(messageIndex)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-brand-200 text-brand-700 bg-brand-50 hover:bg-brand-100 transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <CheckIcon />
+                      Accept all ({unapplied.length})
+                    </button>
+                  )}
+                </div>
               )}
-              {showInsertAll && (
-                <button
-                  onClick={() => onInsert?.(messageIndex)}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-brand-200 text-brand-700 bg-brand-50 hover:bg-brand-100 transition flex items-center gap-1.5 shadow-sm"
-                >
-                  <CheckIcon />
-                  Insert all ({unapplied.length})
-                </button>
-              )}
-            </div>
+            </>
           )}
         </div>
       )}
@@ -367,14 +367,32 @@ function SectionDiff({ change }) {
   );
 }
 
+// Single confirmation shown after a verbatim import, in place of one applied
+// card per section. Undo reverts the whole import (and re-splits into cards).
+function ImportedConfirmation({ onUndo }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+      <CheckIcon />
+      Added to your resume
+      <button
+        onClick={onUndo}
+        className="ml-auto text-[11px] font-semibold text-slate-500 hover:text-slate-800 px-2 py-0.5 rounded hover:bg-white/70 transition"
+      >
+        Undo
+      </button>
+    </div>
+  );
+}
+
 function SuggestionCard({ suggestion, onInsert, onUndo, onDismiss }) {
-  const { changes = [], applied, dismissed, canUndo } = suggestion || {};
+  const { changes = [], applied, dismissed, canUndo, label } = suggestion || {};
 
   if (applied) {
     return (
       <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
         <CheckIcon />
-        Added to your resume
+        {/* Name the section that was applied so each card says what it touched. */}
+        <span className="flex-1 min-w-0 truncate" title={label || undefined}>{label || 'Added to your resume'}</span>
         {canUndo && (
           <button
             onClick={onUndo}
@@ -411,23 +429,23 @@ function SuggestionCard({ suggestion, onInsert, onUndo, onDismiss }) {
               onClick={onInsert}
               className="text-xs font-medium text-brand-600 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-brand-50 transition"
             >
-              Insert anyway →
+              Accept anyway →
             </button>
           </>
         ) : (
           <>
-            <span className="text-[11px] text-slate-400 flex-1 truncate">Review before adding to your resume</span>
+            <span className="text-[11px] text-slate-400 flex-1 truncate">Previewing on your resume</span>
             <button
               onClick={onDismiss}
               className="text-xs px-2.5 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition"
             >
-              Dismiss
+              Undo
             </button>
             <button
               onClick={onInsert}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1"
             >
-              Insert
+              Accept
               <ArrowIcon />
             </button>
           </>

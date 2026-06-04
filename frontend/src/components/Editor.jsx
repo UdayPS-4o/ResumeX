@@ -7,7 +7,7 @@ import TemplateGallery from './TemplateGallery.jsx';
 import { api } from '../lib/api.js';
 import { emptyResume } from '../lib/storage.js';
 import { runAtsChecks } from '@resumex/ats';
-import { mergeResume, diffResume, hasContent, splitChangesIntoCards, applyCardPatch, invertCardPatch, undoCardPatch } from '@resumex/core';
+import { mergeResume, diffResume, hasContent, splitChangesIntoCards, applyCardPatch, invertCardPatch, undoCardPatch, highlightCardPatch } from '@resumex/core';
 import { usePdfCompiler } from '../lib/usePdfCompiler.js';
 
 const GREETING = {
@@ -92,10 +92,26 @@ export default function Editor({
   }, [resume.name]);
 
   const [retryNonce, setRetryNonce] = useState(0);
+  const previewResume = useMemo(() => {
+    let pr = resume;
+    for (const m of messages) {
+      if (!m.suggestion || !m.suggestion.cards) continue;
+      for (const card of m.suggestion.cards) {
+        // Apply unapplied, un-dismissed cards with highlights
+        if (!m.suggestion.appliedCards?.[card.id] && !m.suggestion.dismissedCards?.[card.id] && !m.suggestion.dismissed && !m.suggestion.undoneCards?.[card.id]) {
+          const edits = card.changes.flatMap(c => c.edits || []);
+          const highlightedPatch = highlightCardPatch(card.patch, edits);
+          pr = applyCardPatch(pr, card.id, highlightedPatch);
+        }
+      }
+    }
+    return pr;
+  }, [resume, messages]);
+
   // PDF compilation + a small cache of compiled blobs. `prewarm(id)` lets the
   // template tab compile a layout on hover so picking it swaps in instantly.
   const { pdfUrl, compiling, error: pdfError, prewarm } = usePdfCompiler({
-    resume, templateId, pageSize, trim, retryNonce,
+    resume: previewResume, templateId, pageSize, trim, retryNonce,
   });
 
   const importedOnce = useRef(false);
@@ -233,13 +249,23 @@ export default function Editor({
         // once, but keep a snapshot so the whole thing stays undoable (and an
         // undo splits it back into per-section cards to cherry-pick).
         const cards = splitChangesIntoCards(changes, patch, baseResume);
+        const isImport = imported && !optimize;
+        // Optimize: snapshot how to reverse each card so every section can be
+        // undone on its own (cards touch disjoint items, so capturing them all
+        // against baseResume up front is safe). Import collapses to one
+        // confirmation + Undo-all, so it leans on the whole-resume `undoAll`.
         const appliedCards = {};
-        for (const c of cards) appliedCards[c.id] = {};
+        for (const c of cards) {
+          appliedCards[c.id] = isImport ? {} : { undo: invertCardPatch(baseResume, c.id, c.patch) };
+        }
         setResume(r => mergeResume(r, patch));
         assistantMsg = {
           role: 'assistant',
           content: replyText,
-          suggestion: { patch, changes, cards, appliedCards, applied: true, undoAll: baseResume },
+          // `imported` marks a verbatim import (vs. Optimize) so the chat can
+          // collapse the per-section cards into one "Added to your resume"
+          // confirmation. After an Undo-all it splits back into cherry-pick cards.
+          suggestion: { patch, changes, cards, appliedCards, applied: true, undoAll: baseResume, imported: isImport },
         };
         // Offer a one-click Optimize right in the chat after a verbatim import.
         if (imported && !optimize) assistantMsg.optimizeOffer = true;
@@ -320,9 +346,13 @@ export default function Editor({
     setMessages(curr => curr.map((mm, i) => {
       if (i !== messageIndex || !mm.suggestion) return mm;
       const appliedCards = { ...(mm.suggestion.appliedCards || {}) };
-      for (const card of targets) delete appliedCards[card.id];
+      const undoneCards = { ...(mm.suggestion.undoneCards || {}) };
+      for (const card of targets) {
+        delete appliedCards[card.id];
+        undoneCards[card.id] = true;
+      }
       const stillApplied = cards.length > 0 && cards.every(c => appliedCards[c.id]);
-      return { ...mm, suggestion: { ...mm.suggestion, appliedCards, applied: stillApplied } };
+      return { ...mm, suggestion: { ...mm.suggestion, appliedCards, undoneCards, applied: stillApplied } };
     }));
   }
 
@@ -532,7 +562,7 @@ export default function Editor({
             pdfUrl={pdfUrl}
             compiling={compiling}
             error={pdfError}
-            empty={!hasContent(resume)}
+            empty={!hasContent(previewResume)}
             onRetry={() => setRetryNonce(n => n + 1)}
             onDownload={downloadPdf}
           />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ResumePreview from './ResumePreview.jsx';
+import { Avatar } from 'avatar-forge/react';
 
 export default function Dashboard({ resumes, onCreateNew, onOpen, onDelete, onDuplicate, onOpenSettings, hasKey }) {
   return (
@@ -11,16 +12,20 @@ export default function Dashboard({ resumes, onCreateNew, onOpen, onDelete, onDu
             <div className="w-8 h-8 rounded-lg bg-brand-600 text-white grid place-items-center font-bold text-sm shadow-sm shadow-brand-600/30">R</div>
             <span className="font-bold text-slate-900 tracking-tight">Resumex</span>
           </div>
-          <button
-            onClick={onOpenSettings}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition"
-          >
-            <SettingsIcon />
-            Settings
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${hasKey ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-              {hasKey ? 'ready' : 'no key'}
-            </span>
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onOpenSettings}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition"
+            >
+              <SettingsIcon />
+              Settings
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${hasKey ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {hasKey ? 'ready' : 'no key'}
+              </span>
+            </button>
+            <div className="w-px h-6 bg-slate-200"></div>
+            <Avatar value="Uday PS" size={32} style="marble" rounded="circle" />
+          </div>
         </div>
       </header>
 
@@ -111,7 +116,7 @@ function ResumeCard({ entry, onOpen, onDelete, onDuplicate }) {
       {/* Preview area */}
       <div onClick={onOpen} className="px-5 pt-4 pb-3">
         {/* Live, scaled render of the actual resume */}
-        <div className="rounded-lg overflow-hidden border border-slate-200/70 ring-1 ring-slate-100 mb-3 bg-white" style={{ aspectRatio: '816 / 1056' }}>
+        <div className="rounded-lg overflow-hidden border border-slate-200/70 ring-1 ring-slate-100 mb-3 bg-white" style={{ aspectRatio: '794 / 1123' }}>
           <ResumePreview resume={entry.resume} template={entry.templateId} fallbackName={name} className="w-full h-full" />
         </div>
 
@@ -122,6 +127,7 @@ function ResumeCard({ entry, onOpen, onDelete, onDuplicate }) {
       {/* Footer */}
       <div className="px-5 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <Avatar value={name || 'Untitled'} size={20} style="blob" />
           <span className="text-[11px] text-slate-400">{date}</span>
           <span className="w-1 h-1 rounded-full bg-slate-300" />
           <span className="text-[11px] text-slate-400 capitalize">{entry.templateId}</span>

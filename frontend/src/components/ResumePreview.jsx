@@ -16,7 +16,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 // preview is pixel-proportional to a real printed page.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PAGE_W = 816; // 8.5in * 96dpi
+const PAGE_W = 794; // A4: 8.27in * 96dpi
 
 // ── Markdown → safe inline HTML (mirrors RichText's **bold** / *italic*) ──────
 function escapeHtml(s) {
@@ -27,6 +27,7 @@ function mdInline(s) {
   let h = escapeHtml(s);
   h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   h = h.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  h = h.replace(/\+\+([^+]+)\+\+/g, '<mark style="background-color: #dcfce7; color: #065f46; border-radius: 2px; padding: 0 2px;">$1</mark>');
   h = h.replace(/\n/g, '<br/>');
   return { __html: h };
 }
@@ -80,6 +81,40 @@ const STYLES = {
     accent: '#7c3aed', font: SANS, align: 'left',
     nameSize: 22, nameColor: '#7c3aed', heading: 'compact', headingUpper: true,
     dense: true, inlineHeadline: true,
+    labels: {},
+  },
+  executive: {
+    accent: '#1a56db', font: SANS, align: 'center',
+    nameSize: 28, nameColor: '#1a56db', heading: 'double-rule', headingUpper: true,
+    labels: { summary: 'Profile', experience: 'Work Experience' },
+  },
+  neat: {
+    accent: '#4682b4', font: SANS, align: 'left',
+    nameSize: 26, nameColor: '#1e3a5f', heading: 'accentrule', headingUpper: true,
+    layout: 'sidebar-left', sidebar: ['summary', 'skills', 'awards'], sidebarWidth: '33%',
+    labels: { summary: 'About me' },
+  },
+  deedy: {
+    accent: '#2b6cb0', font: SANS, align: 'center',
+    nameSize: 26, nameColor: '#111827', heading: 'accentrule', headingUpper: true,
+    layout: 'sidebar-left', sidebar: ['education', 'skills', 'awards'], sidebarWidth: '30%',
+    labels: {},
+  },
+  alta: {
+    accent: '#0d9488', font: SANS, align: 'left',
+    nameSize: 26, nameColor: '#0d9488', heading: 'accentrule', headingUpper: true,
+    headerLayout: 'split',
+    labels: {},
+  },
+  minimalist: {
+    accent: '#000000', font: SERIF, align: 'center',
+    nameSize: 24, nameColor: '#1a202c', heading: 'framed-center', headingUpper: true,
+    labels: {},
+  },
+  attractive: {
+    accent: '#0F83C0', font: SANS, align: 'left',
+    nameSize: 28, nameColor: '#0F83C0', heading: 'background', headingUpper: true,
+    layout: 'sidebar-left', sidebar: ['skills', 'education', 'certifications', 'awards'], sidebarWidth: '33%',
     labels: {},
   },
 };
@@ -160,6 +195,28 @@ function Heading({ children, s }) {
     return <div style={{ ...common, color: '#111827', textAlign: 'center', borderBottom: '1px solid #9aa1ad', paddingBottom: 3 }}>{text}</div>;
   if (s.heading === 'compact')
     return <div style={{ ...common, color: accent, borderBottom: `0.8px solid ${accent}55`, paddingBottom: 2 }}>{text}</div>;
+  if (s.heading === 'double-rule')
+    return (
+      <div style={{ ...common, textAlign: 'center', color: accent, marginBottom: 8, marginTop: 18 }}>
+        <div style={{ borderTop: `1.5px solid ${accent}`, marginBottom: 5 }} />
+        {text}
+        <div style={{ borderBottom: `1.5px solid ${accent}`, marginTop: 5, paddingBottom: 2 }} />
+      </div>
+    );
+  if (s.heading === 'framed-center')
+    return (
+      <div style={{ ...common, textAlign: 'center', color: accent, marginBottom: 8, marginTop: 18 }}>
+        <div style={{ borderTop: '1px solid #cbd5e1', marginBottom: 5 }} />
+        <span style={{ letterSpacing: 1.5 }}>{text}</span>
+        <div style={{ borderBottom: '1px solid #cbd5e1', marginTop: 5, paddingBottom: 2 }} />
+      </div>
+    );
+  if (s.heading === 'background')
+    return (
+      <div style={{ ...common, textAlign: 'center', backgroundColor: accent, color: '#fff', padding: '4px 0', borderRadius: 2, marginBottom: 8, marginTop: 16 }}>
+        {text}
+      </div>
+    );
   // 'rule' (uday) — accent text + accent rule
   return <div style={{ ...common, color: accent, borderBottom: `1.6px solid ${accent}`, paddingBottom: 2 }}>{text}</div>;
 }
@@ -281,39 +338,68 @@ function ResumePage({ resume, template, fallbackName }) {
     .filter((k) => DEFAULT_ORDER.includes(k));
   for (const k of DEFAULT_ORDER) if (!order.includes(k)) order.push(k);
 
-  const sections = order.map((k) => renderSection(k, r, s)).filter(Boolean);
-  const blank = !has(r.name) && sections.length === 0;
+  const mainKeys = s.layout === 'sidebar-left' ? order.filter(k => !s.sidebar.includes(k)) : order;
+  const sidebarKeys = s.layout === 'sidebar-left' ? order.filter(k => s.sidebar.includes(k)) : [];
+
+  const mainSections = mainKeys.map((k) => renderSection(k, r, s)).filter(Boolean);
+  const sidebarSections = sidebarKeys.map((k) => renderSection(k, r, s)).filter(Boolean);
+  const blank = !has(r.name) && mainSections.length === 0 && sidebarSections.length === 0;
 
   return (
     <div style={{
-      width: PAGE_W, minHeight: 1056, boxSizing: 'border-box',
+      width: PAGE_W, minHeight: 1123, boxSizing: 'border-box',
       padding: s.dense ? '34px 42px' : '40px 50px',
       background: '#fff', color: '#1f2430', fontFamily: s.font,
       WebkitFontSmoothing: 'antialiased', textRendering: 'optimizeLegibility',
     }}>
-      <header style={{ textAlign: s.align, marginBottom: 4 }}>
-        <div style={{ fontSize: s.nameSize, fontWeight: 700, color: s.nameColor, lineHeight: 1.05, letterSpacing: 0.2 }}>
-          {name}
-          {s.inlineHeadline && has(headline) && (
-            <span style={{ fontSize: 14, fontWeight: 400, fontStyle: 'italic', color: '#4b5563' }}> — {headline}</span>
-          )}
-        </div>
-        {!s.inlineHeadline && has(headline) && (
-          <div style={{ fontSize: 14, color: '#374151', marginTop: 3, fontWeight: 500 }}>{headline}</div>
-        )}
-        {contactBits.length > 0 && (
-          <div style={{ fontSize: 11, color: '#5b6470', marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: '2px 0', justifyContent: s.align === 'center' ? 'center' : 'flex-start' }}>
-            {contactBits.map((b, i) => (
-              <span key={i}>{b}{i < contactBits.length - 1 && <span style={{ color: '#c2c8d0', margin: '0 4px' }}>·</span>}</span>
-            ))}
+      {s.headerLayout === 'split' ? (
+        <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: s.nameSize, fontWeight: 700, color: s.nameColor, lineHeight: 1.05, letterSpacing: 0.2 }}>{name}</div>
+            {has(headline) && <div style={{ fontSize: 14, color: '#374151', marginTop: 3, fontWeight: 500 }}>{headline}</div>}
           </div>
-        )}
-        <div style={{ borderBottom: `1px solid ${s.accent}22`, marginTop: 8 }} />
-      </header>
+          <div style={{ fontSize: 11, color: '#5b6470', textAlign: 'right', lineHeight: 1.4 }}>
+            {contactBits.map((b, i) => <div key={i}>{b}</div>)}
+          </div>
+        </header>
+      ) : (
+        <header style={{ textAlign: s.align, marginBottom: 4 }}>
+          <div style={{ fontSize: s.nameSize, fontWeight: 700, color: s.nameColor, lineHeight: 1.05, letterSpacing: 0.2 }}>
+            {name}
+            {s.inlineHeadline && has(headline) && (
+              <span style={{ fontSize: 14, fontWeight: 400, fontStyle: 'italic', color: '#4b5563' }}> — {headline}</span>
+            )}
+          </div>
+          {!s.inlineHeadline && has(headline) && (
+            <div style={{ fontSize: 14, color: '#374151', marginTop: 3, fontWeight: 500 }}>{headline}</div>
+          )}
+          {contactBits.length > 0 && (
+            <div style={{ fontSize: 11, color: '#5b6470', marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: '2px 0', justifyContent: s.align === 'center' ? 'center' : 'flex-start' }}>
+              {contactBits.map((b, i) => (
+                <span key={i}>{b}{i < contactBits.length - 1 && <span style={{ color: '#c2c8d0', margin: '0 4px' }}>·</span>}</span>
+              ))}
+            </div>
+          )}
+          <div style={{ borderBottom: `1px solid ${s.accent}22`, marginTop: 8 }} />
+        </header>
+      )}
 
       {blank ? (
         <div style={{ marginTop: 120, textAlign: 'center', color: '#aab2bd', fontSize: 14 }}>Empty resume — start chatting to fill it in</div>
-      ) : sections}
+      ) : s.layout === 'sidebar-left' ? (
+        <div style={{ display: 'flex', gap: 32, marginTop: 12 }}>
+          <div style={{ width: s.sidebarWidth, flexShrink: 0 }}>
+            {sidebarSections}
+          </div>
+          <div style={{ flex: 1 }}>
+            {mainSections}
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 12 }}>
+          {mainSections}
+        </div>
+      )}
     </div>
   );
 }

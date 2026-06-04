@@ -5,9 +5,7 @@
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./latex": "./src/latex.js",
-    "./latex.js": "./src/latex.js"
+    ".": "./src/index.js"
   },
   "engines": {
     "node": ">=20"

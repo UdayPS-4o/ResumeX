@@ -10,16 +10,19 @@
 //                                                   plus a `keywords` report.
 
 import {
-  STRONG_VERBS, WEAK_OPENERS, BUZZWORDS, LEADING_ADVERBS,
+  STRONG_VERBS, WEAK_OPENERS, BUZZWORDS, FILLER, FIRST_PERSON, LEADING_ADVERBS,
 } from './dictionary.js';
 import { matchKeywords, resumeToText } from './keywords.js';
 import { tokenize } from './text.js';
 
-// Category weights. With a JD, the seven quality categories are scaled to 65 so
-// a 35-pt "Keyword match" category can dominate — mirroring how ATS scoring
-// prioritizes requisition keyword overlap. Both rows total 100.
-const WEIGHTS_BASE = { contact: 15, sections: 20, quantified: 20, verbs: 15, dates: 10, skills: 10, concise: 10 };
-const WEIGHTS_JD   = { contact: 10, sections: 13, quantified: 13, verbs: 10, dates: 7,  skills: 7,  concise: 5  }; // +35 keyword
+// Category weights, tuned to track mainstream ATS checkers (Resume Worded,
+// Enhancv, Jobscan): content quality (quantified impact + writing/tone) and
+// keywords dominate, while mere section/date *presence* is a small parseability
+// factor — not 40% of the score. With a JD the eight quality categories scale to
+// 65 so a 35-pt "Keyword match" category leads (that's what ATS ranks on).
+// Both rows total 100.
+const WEIGHTS_BASE = { contact: 12, sections: 14, quantified: 22, verbs: 14, dates: 6, skills: 10, concise: 12, writing: 10 };
+const WEIGHTS_JD   = { contact: 8,  sections: 9,  quantified: 14, verbs: 9,  dates: 4, skills: 6,  concise: 8,  writing: 7 }; // +35 keyword = 100
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -117,34 +120,63 @@ export function runAtsChecks(resume, opts = {}) {
     add('Skills / keywords', ratio, W.skills);
   }
 
-  // 7. Conciseness & length — bullet length, overall word count, buzzwords.
+  // 7. Conciseness & length — bullet length + overall word count.
   {
-    const longOnes = bullets.filter(b => wordCount(b) > 32).length;
-    let ratio = bullets.length ? 1 - Math.min(longOnes / bullets.length, 1) : 1;
-    if (bullets.length && longOnes / bullets.length > 0.25) {
-      issues.push({ severity: 'low', text: 'Some bullets are very long — keep them to one scannable line.' });
-    } else if (bullets.length) {
-      passed.push('Bullets are concise');
-    }
-
     const totalWords = wordCount(resumeToText(r));
-    if (totalWords && totalWords < 250) {
-      issues.push({ severity: 'medium', text: `Résumé is short (~${totalWords} words) — likely too thin to rank well.` });
-      ratio *= 0.8;
-    } else if (totalWords > 1100) {
-      issues.push({ severity: 'low', text: `Résumé is long (~${totalWords} words) — tighten to keep it scannable.` });
-      ratio *= 0.85;
+    if (bullets.length === 0 && totalWords < 30) {
+      add('Conciseness', 0, W.concise); // nothing to evaluate
+    } else {
+      const longOnes = bullets.filter(b => wordCount(b) > 32).length;
+      let ratio = bullets.length ? 1 - Math.min(longOnes / bullets.length, 1) : 1;
+      if (bullets.length && longOnes / bullets.length > 0.25) {
+        issues.push({ severity: 'low', text: 'Some bullets are very long — keep them to one scannable line.' });
+      } else if (bullets.length) {
+        passed.push('Bullets are concise');
+      }
+      if (totalWords && totalWords < 250) {
+        issues.push({ severity: 'medium', text: `Résumé is short (~${totalWords} words) — likely too thin to rank well.` });
+        ratio *= 0.85;
+      } else if (totalWords > 1100) {
+        issues.push({ severity: 'low', text: `Résumé is long (~${totalWords} words) — tighten to keep it scannable.` });
+        ratio *= 0.85;
+      }
+      add('Conciseness', ratio, W.concise);
     }
-
-    const buzz = findBuzzwords(r);
-    if (buzz.length) {
-      issues.push({ severity: 'low', text: `Replace cliché buzzwords with evidence: ${buzz.slice(0, 4).join(', ')}${buzz.length > 4 ? '…' : ''}.` });
-      ratio -= Math.min(0.05 * buzz.length, 0.2);
-    }
-    add('Conciseness', ratio, W.concise);
   }
 
-  // 8. Keyword match against the job description (only when a JD is supplied).
+  // 8. Writing quality & tone — first person, buzzwords, filler, broken glyphs.
+  // (Resume Worded calls this "style"; Jobscan calls it "tone".)
+  {
+    const text = resumeToText(r);
+    if (wordCount(text) < 30) {
+      add('Writing quality', 0, W.writing);
+    } else {
+      let ratio = 1;
+      const fp = findFirstPerson(r);
+      if (fp.length) {
+        ratio -= 0.2;
+        issues.push({ severity: 'low', text: `Drop first-person pronouns (${fp.slice(0, 3).join(', ')}) — résumés use implied first person ("Built…", not "I built…").` });
+      }
+      const buzz = findBuzzwords(r);
+      if (buzz.length) {
+        ratio -= Math.min(0.12 * buzz.length, 0.3);
+        issues.push({ severity: 'low', text: `Replace cliché buzzwords with evidence: ${buzz.slice(0, 4).join(', ')}${buzz.length > 4 ? '…' : ''}.` });
+      }
+      const filler = findFiller(text);
+      if (filler.length) {
+        ratio -= Math.min(0.06 * filler.length, 0.18);
+        issues.push({ severity: 'low', text: `Cut vague filler: ${filler.slice(0, 4).join(', ')}.` });
+      }
+      if (/�/.test(text)) {
+        ratio -= 0.3;
+        issues.push({ severity: 'high', text: 'Résumé contains garbled characters (�) — an encoding/font issue that corrupts ATS parsing. Re-export the PDF.' });
+      }
+      if (ratio >= 0.95) passed.push('Clean, professional résumé tone');
+      add('Writing quality', ratio, W.writing);
+    }
+  }
+
+  // 9. Keyword match against the job description (only when a JD is supplied).
   let keywords = null;
   if (jd) {
     keywords = matchKeywords(r, jd);
@@ -169,8 +201,8 @@ export function runAtsChecks(resume, opts = {}) {
 
 export function gradeFor(score) {
   if (score >= 85) return 'Excellent';
-  if (score >= 70) return 'Good';
-  if (score >= 50) return 'Needs work';
+  if (score >= 68) return 'Good';
+  if (score >= 48) return 'Needs work';
   return 'Poor';
 }
 
@@ -229,6 +261,25 @@ function findBuzzwords(r) {
   const found = [];
   for (const b of BUZZWORDS) {
     if (text.includes(b) && !found.includes(b)) found.push(b);
+  }
+  return found;
+}
+
+function findFirstPerson(r) {
+  const parts = [r.summary || '', r.headline || ''];
+  for (const e of r.experience || []) parts.push(...(e.bullets || []));
+  for (const p of r.projects || []) { parts.push(p.description || ''); parts.push(...(p.bullets || [])); }
+  const found = new Set();
+  for (const tok of tokenize(parts.join(' '))) if (FIRST_PERSON.has(tok)) found.add(tok);
+  return [...found];
+}
+
+function findFiller(text) {
+  // Collapse punctuation to spaces so "etc." and "in order to" match cleanly.
+  const t = ' ' + text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const found = [];
+  for (const f of FILLER) {
+    if (t.includes(' ' + f + ' ') && !found.includes(f)) found.push(f);
   }
   return found;
 }

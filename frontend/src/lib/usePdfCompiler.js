@@ -46,8 +46,8 @@ export function usePdfCompiler({ resume, templateId, pageSize, trim, retryNonce,
 
     const entry = {};
     entry.promise = (async () => {
-      const { latex } = await api.render({ templateId: tid, resume: r, pageSize: ps });
-      const blob = await api.compile(latex, { trim: tr });
+      const { source, format } = await api.render({ templateId: tid, resume: r, pageSize: ps });
+      const blob = await api.compile(source, { trim: tr, format });
       entry.url = URL.createObjectURL(blob);
       return entry.url;
     })().catch((e) => {
