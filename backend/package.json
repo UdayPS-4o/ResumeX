@@ -7,23 +7,19 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "prerender": "node scripts/prerender-previews.mjs"
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
     "@resumex/core": "*",
     "@resumex/renderer": "*",
     "@resumex/ats": "*",
     "@resumex/llm": "*",
-    "@anthropic-ai/sdk": "^0.32.1",
-    "@google/generative-ai": "^0.21.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "mammoth": "^1.12.0",
     "multer": "^2.1.1",
     "mupdf": "^1.27.0",
-    "openai": "^4.77.0",
     "pdfjs-dist": "^5.7.284"
   },
   "engines": {

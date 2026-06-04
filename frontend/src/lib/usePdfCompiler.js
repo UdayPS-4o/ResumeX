@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api.js';
-import { hasContent } from './resume.js';
+import { hasContent } from '@resumex/core';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // usePdfCompiler — owns LaTeX→PDF compilation plus a tiny LRU cache of compiled

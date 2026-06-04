@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ResumePreview, { SAMPLE_RESUME } from './ResumePreview.jsx';
-import { hasContent } from '../lib/resume.js';
+import { hasContent } from '@resumex/core';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TemplateGallery — the "Templates" tab. A grid of compact, razor-sharp renders
