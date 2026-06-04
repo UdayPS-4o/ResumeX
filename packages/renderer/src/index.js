@@ -1,6 +1,7 @@
-// @resumex/renderer — single source of truth for LaTeX resume templates.
-export { renderTemplate, listTemplates, getSeed, TEMPLATES } from './templates/index.js';
+// @resumex/renderer — single source of truth for resume templates (Typst engine).
+export { renderTemplate, listTemplates, getSeed, TEMPLATES, getFormat } from './templates/index.js';
 
-// Re-export the LaTeX string helpers so consumers can import them from the
-// package root as well as via the "./latex.js" subpath.
-export * from './latex.js';
+// Re-export the generic structure helpers so consumers can import them from the
+// package root.
+export { DEFAULT_SECTION_TITLES, sectionTitle, orderSections } from './typst.js';
+

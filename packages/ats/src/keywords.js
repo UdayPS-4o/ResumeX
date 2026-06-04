@@ -1,8 +1,37 @@
 // Deterministic JD ↔ résumé keyword matching — the part real ATS systems
 // actually rank on. No LLM, no network: fast, free, offline, browser-safe.
 
-import { tokenize, normalizeToken, contentTokens, containsPhrase, STOPWORDS } from './text.js';
+import { tokenize, normalizeToken, containsPhrase, STOPWORDS } from './text.js';
 import { SKILL_SET, MULTIWORD_SKILLS } from './dictionary.js';
+
+// Common skill aliases → a shared canonical key, so a résumé that says
+// "PostgreSQL" matches a JD that says "Postgres" (and vice-versa). Both the
+// résumé side and the JD side are run through matchKey(), so only the canonical
+// values here need to agree — the keys are every spelling we want to unify.
+const ALIASES = new Map([
+  ['postgres', 'postgresql'], ['postgresql', 'postgresql'], ['psql', 'postgresql'],
+  ['k8s', 'kubernetes'], ['kubernetes', 'kubernetes'],
+  ['js', 'javascript'], ['javascript', 'javascript'],
+  ['ts', 'typescript'], ['typescript', 'typescript'],
+  ['golang', 'go'],
+  ['node', 'nodejs'], ['node.js', 'nodejs'], ['nodejs', 'nodejs'],
+  ['react.js', 'react'], ['reactjs', 'react'], ['react', 'react'],
+  ['vue.js', 'vue'], ['vuejs', 'vue'],
+  ['next.js', 'nextjs'], ['nextjs', 'nextjs'],
+  ['tailwindcss', 'tailwind'],
+  ['dotnet', '.net'], ['.net', '.net'],
+  ['gcp', 'gcp'], ['gce', 'gcp'],
+  ['ml', 'machinelearning'],
+  ['postgressql', 'postgresql'],
+]);
+
+// Canonical match key for a single token: alias → canonical, else a conservative
+// singularization. Both sides of a comparison go through this.
+function matchKey(tok) {
+  const t = String(tok || '').toLowerCase().trim();
+  if (ALIASES.has(t)) return ALIASES.get(t);
+  return normalizeToken(t);
+}
 
 // Flatten the résumé JSON into one searchable text blob.
 export function resumeToText(r) {
@@ -41,18 +70,17 @@ export function extractJdKeywords(jobDescription, limit = 28) {
     if (containsPhrase(lower, phrase)) skillHits.set(phrase, (skillHits.get(phrase) || 0) + 3);
   }
 
-  // 2) Single-token frequency pass over the JD.
-  const freq = new Map();
+  // 2) Single-token frequency pass. Recognized skills are tracked by their RAW
+  //    token so canonical names survive — normalization would mangle singulars
+  //    that happen to end in "-es" (e.g. "kubernetes" → "kubernete").
+  const freq = new Map();        // normalized term → count (general terms)
+  const rawSkills = new Map();   // raw skill token → count
   for (const tok of tokenize(jd)) {
     if (STOPWORDS.has(tok)) continue;
+    if (SKILL_SET.has(tok)) rawSkills.set(tok, (rawSkills.get(tok) || 0) + 1);
     const n = normalizeToken(tok);
     if (n.length < 2 || STOPWORDS.has(n)) continue;
     freq.set(n, (freq.get(n) || 0) + 1);
-  }
-  // Promote single-token known skills regardless of frequency.
-  const singleSkills = new Map();
-  for (const [tok, count] of freq) {
-    if (SKILL_SET.has(tok)) singleSkills.set(tok, count);
   }
 
   // Don't double-count a single token already covered by a multi-word skill.
@@ -63,7 +91,7 @@ export function extractJdKeywords(jobDescription, limit = 28) {
 
   const skills = [
     ...[...skillHits.keys()],
-    ...[...singleSkills.keys()].filter(t => !coveredBySkill.has(t)),
+    ...[...rawSkills.keys()].filter(t => !coveredBySkill.has(normalizeToken(t))),
   ];
   const skillSetLocal = new Set(skills.flatMap(s => tokenize(s).map(normalizeToken)));
 
@@ -93,13 +121,18 @@ export function matchKeywords(resume, jobDescription) {
 
   const text = resumeToText(resume);
   const lower = text.toLowerCase();
-  const resumeTokens = new Set(contentTokens(text));
+  const resumeKeys = new Set(tokenize(text).map(matchKey));
 
   const present = kw => {
-    // Multi-word / special chars → phrase match; else normalized-token match.
-    if (/\s|\.|\//.test(kw)) return containsPhrase(lower, kw);
-    const n = normalizeToken(kw);
-    return resumeTokens.has(n) || containsPhrase(lower, kw);
+    const p = String(kw).toLowerCase();
+    if (/\s|\//.test(p)) {
+      // Multi-word phrase: exact phrase, else all significant tokens present.
+      if (containsPhrase(lower, p)) return true;
+      const toks = tokenize(p).filter(t => !STOPWORDS.has(t));
+      return toks.length > 0 && toks.every(t => resumeKeys.has(matchKey(t)));
+    }
+    // Single token (incl. dotted skills like "node.js") → canonical-key match.
+    return resumeKeys.has(matchKey(p)) || containsPhrase(lower, p);
   };
 
   const matchedSkills = skills.filter(present);

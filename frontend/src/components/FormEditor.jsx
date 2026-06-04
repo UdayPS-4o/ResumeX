@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import RichText from './RichText.jsx';
-
-// Full manual editor — editable fields, collapsible sections, add/remove items,
-// and drag-and-drop reordering for items, bullets, and whole sections. Edits
-// flow straight into the shared `resume` state so the live preview + ATS update
-// instantly.
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const DEFAULT_ORDER = ['summary', 'experience', 'education', 'projects', 'skills', 'certifications', 'awards'];
 
@@ -39,9 +47,13 @@ export default function FormEditor({ resume, onChange }) {
   const [collapsed, setCollapsed] = useState(() => new Set());
   const [openItems, setOpenItems] = useState(() => new Set());
 
-  // Section drag state.
-  const [dragKey, setDragKey] = useState(null);
-  const [overKey, setOverKey] = useState(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // 5px movement before dragging starts, allows clicking buttons/inputs
+      },
+    })
+  );
 
   const r = resume || {};
   const contact = r.contact || {};
@@ -82,14 +94,13 @@ export default function FormEditor({ resume, onChange }) {
   };
   const order = effectiveOrder();
 
-  // Drop the dragged section before/at the target's position.
-  const dropSection = (targetKey) => {
-    if (!dragKey || dragKey === targetKey) { setDragKey(null); setOverKey(null); return; }
-    const from = order.indexOf(dragKey);
-    const to = order.indexOf(targetKey);
-    if (from !== -1 && to !== -1) patch({ sectionOrder: reorder(order, from, to) });
-    setDragKey(null);
-    setOverKey(null);
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = order.indexOf(active.id);
+      const newIndex = order.indexOf(over.id);
+      patch({ sectionOrder: reorder(order, oldIndex, newIndex) });
+    }
   };
 
   const toggleSection = (key) =>
@@ -118,22 +129,17 @@ export default function FormEditor({ resume, onChange }) {
       </Section>
 
       {/* Reorderable content sections */}
-      {order.map((key) => (
-        <Section
-          key={key}
-          title={SECTION_LABELS[key]}
-          count={key === 'summary' ? undefined : (r[key]?.length || 0)}
-          collapsed={collapsed.has(key)}
-          onToggle={() => toggleSection(key)}
-          // drag-and-drop
-          draggable
-          dragging={dragKey === key}
-          dragOver={overKey === key && dragKey !== key}
-          onDragStart={() => setDragKey(key)}
-          onDragEnter={() => dragKey && setOverKey(key)}
-          onDrop={() => dropSection(key)}
-          onDragEnd={() => { setDragKey(null); setOverKey(null); }}
-        >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={order} strategy={verticalListSortingStrategy}>
+          {order.map((key) => (
+            <SortableSectionWrapper
+              key={key}
+              id={key}
+              title={SECTION_LABELS[key]}
+              count={key === 'summary' ? undefined : (r[key]?.length || 0)}
+              collapsed={collapsed.has(key)}
+              onToggle={() => toggleSection(key)}
+            >
           <HeadingOverride
             value={sectionTitles[key]}
             placeholder={SECTION_LABELS[key]}
@@ -227,21 +233,32 @@ export default function FormEditor({ resume, onChange }) {
           )}
 
           {key === 'skills' && (
-            <ItemSection
-              items={r.skills} sectionKey="skills"
-              labelFor={s => s.category || 'Skill group'}
-              subFor={s => (s.items || []).join(', ')}
-              openItems={openItems} toggleItem={toggleItem}
-              onAdd={() => addItem('skills')} onDel={i => delItem('skills', i)}
-              onMove={(from, to) => moveItem('skills', from, to)}
-              addLabel="Add skill group"
-              render={(s, i) => (
-                <>
-                  <Text label="Category" value={s.category} onChange={v => updItem('skills', i, { category: v })} placeholder="Languages" />
-                  <Tags label="Skills" value={s.items} onChange={v => updItem('skills', i, { items: v })} placeholder="JavaScript, Python, Go" />
-                </>
-              )}
-            />
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 px-1 pb-2 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition">
+                <input 
+                  type="checkbox" 
+                  checked={r.settings?.skillsAsBullets ?? false}
+                  onChange={e => patch({ settings: { ...r.settings, skillsAsBullets: e.target.checked } })}
+                  className="rounded text-brand-500 focus:ring-brand-500 w-4 h-4 border-slate-300"
+                />
+                <span className="text-sm font-medium text-slate-700">Display skills as a bulleted list</span>
+              </label>
+              <ItemSection
+                items={r.skills} sectionKey="skills"
+                labelFor={s => s.category || 'Skill group'}
+                subFor={s => (s.items || []).join(', ')}
+                openItems={openItems} toggleItem={toggleItem}
+                onAdd={() => addItem('skills')} onDel={i => delItem('skills', i)}
+                onMove={(from, to) => moveItem('skills', from, to)}
+                addLabel="Add skill group"
+                render={(s, i) => (
+                  <>
+                    <Text label="Category" value={s.category} onChange={v => updItem('skills', i, { category: v })} placeholder="Languages" />
+                    <Tags label="Skills" value={s.items} onChange={v => updItem('skills', i, { items: v })} placeholder="JavaScript, Python, Go" />
+                  </>
+                )}
+              />
+            </div>
           )}
 
           {key === 'certifications' && (
@@ -284,8 +301,10 @@ export default function FormEditor({ resume, onChange }) {
               )}
             />
           )}
-        </Section>
-      ))}
+            </SortableSectionWrapper>
+          ))}
+        </SortableContext>
+      </DndContext>
 
       <p className="text-[11px] text-slate-500 text-center pt-1 pb-4">
         Tip: drag any section or entry by its <span className="font-medium text-slate-600">⠿ grip</span> to reorder it.
@@ -297,28 +316,21 @@ export default function FormEditor({ resume, onChange }) {
 /* ───────────────────────── primitives ───────────────────────── */
 
 function Section({
-  title, count, collapsed, onToggle, children,
-  draggable, dragging, dragOver, onDragStart, onDragEnter, onDrop, onDragEnd,
+  title, count, collapsed, onToggle, children, dragHandleProps, isDragging, style, setNodeRef
 }) {
   return (
-    <section
-      onDragOver={draggable ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragEnter?.(); } : undefined}
-      onDrop={draggable ? (e) => { e.preventDefault(); onDrop?.(); } : undefined}
-      className={`${dragOver ? 'dnd-over rounded-xl' : ''} ${dragging ? 'dnd-dragging' : ''}`}
-    >
+    <section ref={setNodeRef} style={style} className={`${isDragging ? 'opacity-50 z-50 relative' : ''}`}>
       {/* The whole header is the drag handle — grab it anywhere to reorder. */}
       <div
-        className={`flex items-center gap-2 py-3.5 ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        draggable={draggable}
-        onDragStart={draggable ? (e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart?.(); } : undefined}
-        onDragEnd={draggable ? onDragEnd : undefined}
+        className={`flex items-center gap-2 py-3.5 ${dragHandleProps ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        {...dragHandleProps}
       >
-        {draggable && (
+        {dragHandleProps && (
           <span className="grip text-slate-400 px-0.5 select-none shrink-0" title="Drag to reorder">
             <Grip className="w-4 h-4" />
           </span>
         )}
-        <button onClick={onToggle} className="flex items-center gap-2 flex-1 min-w-0 text-left group">
+        <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="flex items-center gap-2 flex-1 min-w-0 text-left group">
           <Chevron open={!collapsed} />
           <span className="font-semibold text-slate-900 text-sm truncate">{title}</span>
           {typeof count === 'number' && (
@@ -331,66 +343,118 @@ function Section({
   );
 }
 
+function SortableSectionWrapper({ id, children, ...props }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
+
+  return (
+    <Section
+      setNodeRef={setNodeRef}
+      style={style}
+      isDragging={isDragging}
+      dragHandleProps={{ ...attributes, ...listeners }}
+      {...props}
+    >
+      {children}
+    </Section>
+  );
+}
+
 function ItemSection({
   items, sectionKey, labelFor, subFor, render, openItems, toggleItem,
   onAdd, onDel, onMove, addLabel,
 }) {
   const list = items || [];
-  const [dragIdx, setDragIdx] = useState(null);
-  const [overIdx, setOverIdx] = useState(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  );
 
-  const drop = (target) => {
-    if (dragIdx !== null && dragIdx !== target) onMove(dragIdx, target);
-    setDragIdx(null);
-    setOverIdx(null);
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = list.findIndex((_, i) => `${sectionKey}-${i}` === active.id);
+      const newIndex = list.findIndex((_, i) => `${sectionKey}-${i}` === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onMove(oldIndex, newIndex);
+      }
+    }
   };
+
+  const itemIds = list.map((_, i) => `${sectionKey}-${i}`);
 
   return (
     <div className="space-y-2 pt-2">
       {list.length === 0 && (
         <p className="text-xs text-slate-400 italic py-1">Nothing here yet — add your first entry below.</p>
       )}
-      {list.map((item, i) => {
-        const itemKey = `${sectionKey}:${i}`;
-        const open = openItems.has(itemKey);
-        return (
-          <div
-            key={i}
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragIdx !== null) setOverIdx(i); }}
-            onDrop={(e) => { e.preventDefault(); drop(i); }}
-            className={`form-subcard rounded-xl ${
-              overIdx === i && dragIdx !== i ? 'dnd-over' : ''
-            } ${dragIdx === i ? 'dnd-dragging' : ''}`}
-          >
-            {/* The whole row is the drag handle — grab it anywhere to reorder. */}
-            <div
-              className="flex items-center gap-1 px-2.5 py-2 cursor-grab active:cursor-grabbing"
-              draggable
-              onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragIdx(i); }}
-              onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
-            >
-              <span className="grip text-slate-300 select-none shrink-0" title="Drag to reorder">
-                <Grip className="w-3.5 h-3.5" />
-              </span>
-              <button onClick={() => toggleItem(itemKey)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
-                <Chevron open={open} small />
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium text-slate-900 truncate">{labelFor(item)}</span>
-                  {subFor(item) && <span className="block text-[11px] text-slate-500 truncate">{subFor(item)}</span>}
-                </span>
-              </button>
-              <IconBtn onClick={() => onDel(i)} title="Delete" danger>✕</IconBtn>
-            </div>
-            {open && <div className="reveal px-3 pb-3 pt-2 space-y-3 border-t border-slate-200/60">{render(item, i)}</div>}
-          </div>
-        );
-      })}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          {list.map((item, i) => {
+            const id = `${sectionKey}-${i}`;
+            const itemKey = `${sectionKey}:${i}`;
+            const open = openItems.has(itemKey);
+            return (
+              <SortableItemRow
+                key={id}
+                id={id}
+                open={open}
+                onToggle={() => toggleItem(itemKey)}
+                onDel={() => onDel(i)}
+                label={labelFor(item)}
+                sub={subFor(item)}
+              >
+                {render(item, i)}
+              </SortableItemRow>
+            );
+          })}
+        </SortableContext>
+      </DndContext>
       <button
         onClick={onAdd}
         className="w-full text-sm text-brand-700 hover:text-brand-800 hover:bg-brand-50 border border-dashed border-brand-300 rounded-xl py-2.5 transition font-medium"
       >
         + {addLabel}
       </button>
+    </div>
+  );
+}
+
+function SortableItemRow({ id, open, onToggle, onDel, label, sub, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    position: 'relative'
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`form-subcard rounded-xl bg-white ${isDragging ? 'shadow-xl opacity-80 ring-2 ring-brand-400' : ''}`}>
+      <div
+        className="flex items-center gap-1 px-2.5 py-2 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <span className="grip text-slate-300 select-none shrink-0" title="Drag to reorder">
+          <Grip className="w-3.5 h-3.5" />
+        </span>
+        <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="flex items-center gap-2 flex-1 min-w-0 text-left">
+          <Chevron open={open} small />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-slate-900 truncate">{label}</span>
+            {sub && <span className="block text-[11px] text-slate-500 truncate">{sub}</span>}
+          </span>
+        </button>
+        <IconBtn onClick={(e) => { e.stopPropagation(); onDel(); }} title="Delete" danger>✕</IconBtn>
+      </div>
+      {open && <div className="reveal px-3 pb-3 pt-2 space-y-3 border-t border-slate-200/60">{children}</div>}
     </div>
   );
 }
@@ -479,41 +543,43 @@ function BulletList({ label, value, onChange, placeholder }) {
   const add = () => onChange([...list, '']);
   const del = (i) => onChange(list.filter((_, j) => j !== i));
 
-  // Drag-to-reorder by the grip, so the row's text stays editable.
-  const [dragIdx, setDragIdx] = useState(null);
-  const [overIdx, setOverIdx] = useState(null);
-  const drop = (target) => {
-    if (dragIdx !== null && dragIdx !== target) onChange(reorder(list, dragIdx, target));
-    setDragIdx(null);
-    setOverIdx(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = list.findIndex((_, i) => `bullet-${i}` === active.id);
+      const newIndex = list.findIndex((_, i) => `bullet-${i}` === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onChange(reorder(list, oldIndex, newIndex));
+      }
+    }
   };
+
+  const bulletIds = list.map((_, i) => `bullet-${i}`);
 
   return (
     <div>
       <span className="block text-[11px] font-medium text-slate-500 mb-1.5">{label}</span>
       <div className="space-y-1.5">
-        {list.map((b, i) => (
-          <div
-            key={i}
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragIdx !== null) setOverIdx(i); }}
-            onDrop={(e) => { e.preventDefault(); drop(i); }}
-            className={`flex items-start gap-1.5 rounded-lg ${overIdx === i && dragIdx !== i ? 'dnd-over' : ''} ${dragIdx === i ? 'dnd-dragging' : ''}`}
-          >
-            <span
-              className="grip text-slate-300 hover:text-slate-500 select-none shrink-0 pt-2"
-              title="Drag to reorder"
-              draggable
-              onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragIdx(i); }}
-              onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
-            >
-              <Grip className="w-3.5 h-3.5" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <RichText value={b} onChange={v => set(i, v)} placeholder={placeholder} minHeight={36} />
-            </div>
-            <IconBtn onClick={() => del(i)} title="Remove" danger>✕</IconBtn>
-          </div>
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={bulletIds} strategy={verticalListSortingStrategy}>
+            {list.map((b, i) => (
+              <SortableBulletRow
+                key={`bullet-${i}`}
+                id={`bullet-${i}`}
+                value={b}
+                onChange={v => set(i, v)}
+                onDel={() => del(i)}
+                placeholder={placeholder}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
       <button
         onClick={add}
@@ -521,6 +587,33 @@ function BulletList({ label, value, onChange, placeholder }) {
       >
         + Add bullet
       </button>
+    </div>
+  );
+}
+
+function SortableBulletRow({ id, value, onChange, onDel, placeholder }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    position: 'relative'
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`flex items-start gap-1.5 rounded-lg bg-white ${isDragging ? 'shadow-md opacity-90 ring-1 ring-brand-300' : ''}`}>
+      <span
+        className="grip text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing select-none shrink-0 pt-2"
+        title="Drag to reorder"
+        {...attributes}
+        {...listeners}
+      >
+        <Grip className="w-3.5 h-3.5" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <RichText value={value} onChange={onChange} placeholder={placeholder} minHeight={36} />
+      </div>
+      <IconBtn onClick={onDel} title="Remove" danger>✕</IconBtn>
     </div>
   );
 }

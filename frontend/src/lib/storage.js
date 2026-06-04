@@ -26,18 +26,21 @@ export const PROVIDERS = {
     defaultModel: 'gemini-3.1-flash-lite',
     models: ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3-flash-preview'],
     keyHint: 'Free key at aistudio.google.com/apikey',
+    keyUrl: 'https://aistudio.google.com/apikey',
   },
   anthropic: {
     label: 'Anthropic Claude',
     defaultModel: 'claude-haiku-4-5-20251001',
     models: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-7'],
     keyHint: 'Key at console.anthropic.com',
+    keyUrl: 'https://console.anthropic.com',
   },
   openai: {
     label: 'OpenAI',
     defaultModel: 'gpt-4o-mini',
     models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
     keyHint: 'Key at platform.openai.com/api-keys',
+    keyUrl: 'https://platform.openai.com/api-keys',
   },
 };
 

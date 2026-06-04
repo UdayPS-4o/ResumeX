@@ -9,9 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@resumex/core": "*",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@resumex/ats": "*",
-    "pdfjs-dist": "^4.10.38",
+    "@resumex/core": "*",
+    "avatar-forge": "file:../../packages/avatar-forge",
+    "clipboard-drop": "file:../../packages/clipboard-drop",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

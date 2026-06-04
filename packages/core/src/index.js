@@ -11,4 +11,5 @@ export {
   applyCardPatch,
   invertCardPatch,
   undoCardPatch,
+  highlightCardPatch,
 } from './resume.js';

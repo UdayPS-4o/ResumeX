@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { renderTemplate } from '@resumex/renderer';
+import { renderTemplate, getFormat } from '@resumex/renderer';
 
 const router = Router();
 
-// POST /api/render   body: { templateId, resume }   -> { latex }
+// POST /api/render   body: { templateId, resume, pageSize }
+//   -> { source, format }   (format: 'typst' | 'latex' — drives the compiler)
 router.post('/', (req, res, next) => {
   try {
     const { templateId, resume, pageSize } = req.body || {};
@@ -12,8 +13,8 @@ router.post('/', (req, res, next) => {
       err.status = 400;
       throw err;
     }
-    const latex = renderTemplate(templateId, resume || {}, { pageSize });
-    res.json({ latex });
+    const source = renderTemplate(templateId, resume || {}, { pageSize });
+    res.json({ source, format: getFormat(templateId) });
   } catch (e) {
     next(e);
   }
