@@ -5,7 +5,6 @@ import 'dotenv/config';
 import chatRouter from './routes/chat.js';
 import compileRouter from './routes/compile.js';
 import templatesRouter from './routes/templates.js';
-import jobMatchRouter from './routes/jobMatch.js';
 import renderRouter from './routes/render.js';
 import extractRouter from './routes/extract.js';
 import atsRouter from './routes/ats.js';
@@ -23,7 +22,6 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/chat', chatRouter);
 app.use('/api/compile', compileRouter);
 app.use('/api/templates', templatesRouter);
-app.use('/api/job-match', jobMatchRouter);
 app.use('/api/render', renderRouter);
 app.use('/api/extract', extractRouter);
 app.use('/api/ats-score', atsRouter);

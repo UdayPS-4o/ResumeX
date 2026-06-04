@@ -62,10 +62,6 @@ export const api = {
     return r.blob();
   },
 
-  async jobMatch({ provider, model, apiKey, resume, jobDescription }) {
-    return jsonFetch('/api/job-match', { provider, model, apiKey, resume, jobDescription });
-  },
-
   async atsScore({ provider, model, apiKey, resume, jobDescription }) {
     return jsonFetch('/api/ats-score', { provider, model, apiKey, resume, jobDescription });
   },
