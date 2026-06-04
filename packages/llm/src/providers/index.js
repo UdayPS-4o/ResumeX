@@ -30,7 +30,7 @@ export const PROVIDERS = {
 };
 
 // Resolve an API key — preferring the one the client sent, falling back to env.
-function resolveKey(provider, clientKey) {
+export function resolveKey(provider, clientKey) {
   if (clientKey && clientKey.trim()) return clientKey.trim();
   const envName = {
     gemini: 'GEMINI_API_KEY',

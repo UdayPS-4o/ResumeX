@@ -1,5 +1,5 @@
 // Classic single-column serif resume — traditional, conservative.
-import { tex, hrefTex, dateRange, orderSections, mdTex, sectionTitle } from '../services/latex.js';
+import { tex, hrefTex, dateRange, orderSections, mdTex, sectionTitle } from '../latex.js';
 
 export const META = {
   name: 'Classic',

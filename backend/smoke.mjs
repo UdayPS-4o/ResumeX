@@ -1,5 +1,5 @@
 // Quick smoke test for templates + compiler. Run with `node smoke.mjs`.
-import { listTemplates, renderTemplate } from './src/templates/index.js';
+import { listTemplates, renderTemplate } from '@resumex/renderer';
 import { compileLatex } from './src/services/compiler.js';
 
 const sampleResume = {

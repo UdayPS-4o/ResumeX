@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import * as mupdf from 'mupdf';
 
-import { TEMPLATES } from '../src/templates/index.js';
+import { TEMPLATES } from '@resumex/renderer';
 import { compileLatex } from '../src/services/compiler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

@@ -1,6 +1,12 @@
 {
   "name": "resumex",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "frontend",
+    "package"
+  ],
   "scripts": {
     "setup": "npm install && npm install --prefix backend && npm install --prefix frontend && node scripts/install-engine.mjs",
     "install-engine": "node scripts/install-engine.mjs",

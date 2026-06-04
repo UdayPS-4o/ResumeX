@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { complete } from '../providers/index.js';
-import { buildJobMatchPrompt } from '../prompts/jobMatch.js';
+import { complete, buildJobMatchPrompt, parseModelJson } from '@resumex/llm';
 
 const router = Router();
 
@@ -26,7 +25,7 @@ router.post('/', async (req, res, next) => {
       jsonMode: true,
     });
 
-    const parsed = parseJsonLoose(text);
+    const parsed = parseModelJson(text);
     if (!parsed) {
       const err = new Error('Model did not return valid JSON for the match request.');
       err.status = 502;
@@ -37,15 +36,5 @@ router.post('/', async (req, res, next) => {
     next(e);
   }
 });
-
-function parseJsonLoose(text) {
-  if (!text) return null;
-  let s = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
-  try { return JSON.parse(s); } catch {}
-  const first = s.indexOf('{');
-  const last = s.lastIndexOf('}');
-  if (first === -1 || last === -1) return null;
-  try { return JSON.parse(s.slice(first, last + 1)); } catch { return null; }
-}
 
 export default router;

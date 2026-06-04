@@ -3,10 +3,15 @@
 //
 // Pure functions only: no network, no filesystem, no LaTeX engine required.
 // Pair the output with any LaTeX compiler (tectonic, pdflatex, latexonline…).
+//
+// This package is now a thin compatibility wrapper over the canonical
+// @resumex/* packages — it preserves the original public API while delegating
+// all behavior to @resumex/renderer (templates + LaTeX helpers) and
+// @resumex/core (resume schema helpers).
 
-import { TEMPLATES, listTemplates, getSeed, renderTemplate } from './templates/index.js';
-import { tex, joinTex, hrefTex, dateRange, orderSections } from './latex.js';
-import { emptyResume, mergeResume, resumeJsonSchema } from './schema.js';
+import { TEMPLATES, listTemplates, getSeed, renderTemplate } from '@resumex/renderer';
+import { tex, joinTex, hrefTex, dateRange, orderSections } from '@resumex/renderer/latex';
+import { emptyResume, mergeResume, resumeJsonSchema } from '@resumex/core';
 
 /**
  * Render a resume object to a LaTeX source string.

@@ -2,7 +2,7 @@
 // Design: large blue name, bold rule-separated sections, helvet sans-serif.
 // Supports legal / a4 / letter page sizes.
 
-import { tex, hrefTex, orderSections, sectionTitle } from '../services/latex.js';
+import { tex, hrefTex, orderSections, sectionTitle } from '../latex.js';
 
 export const META = {
   name: 'Uday',

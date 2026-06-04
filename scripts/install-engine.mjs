@@ -196,8 +196,7 @@ const SAMPLE = {
 
 async function warm() {
   log('\nWarming the package cache (one-time online step)…');
-  const tplUrl = pathToFileURL(join(REPO, 'backend', 'src', 'templates', 'index.js')).href;
-  const { listTemplates, renderTemplate } = await import(tplUrl);
+  const { listTemplates, renderTemplate } = await import('@resumex/renderer');
   const dir = await mkdtemp(join(tmpdir(), 'resumex-warm-'));
   let ok = 0, fail = 0;
   try {

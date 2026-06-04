@@ -20,6 +20,7 @@ export const emptyResume = () => ({
   certifications: [], // { name, issuer, date }
   awards: [],         // { name, issuer, date, description }
   sectionOrder: [],   // optional explicit section order; empty = template default
+  sectionTitles: {},  // optional per-section heading overrides; e.g. { projects: 'Selected Work' }
 });
 
 // Lightweight JSON-schema description handed to providers that support structured output.
@@ -120,6 +121,13 @@ export const resumeJsonSchema = {
 
 // Merge updates into the working resume, replacing arrays wholesale
 // (so the model fully owns each section).
+//
+// Reconciled from two prior implementations (backend schema.js and frontend
+// resume.js). They were identical except that the backend additionally
+// shallow-merged `sectionTitles` (so a model turn never wipes the user's custom
+// headings). This reconciled version keeps that superset behavior: it satisfies
+// the frontend call site too, which never relied on sectionTitles being
+// replaced wholesale.
 export function mergeResume(current, update) {
   if (!update || typeof update !== 'object') return current;
   const next = { ...emptyResume(), ...current };
@@ -127,6 +135,9 @@ export function mergeResume(current, update) {
     if (value === undefined || value === null) continue;
     if (key === 'contact' && typeof value === 'object') {
       next.contact = { ...next.contact, ...value };
+    } else if (key === 'sectionTitles' && typeof value === 'object') {
+      // Merge (don't replace) so a model turn never wipes the user's custom headings.
+      next.sectionTitles = { ...(next.sectionTitles || {}), ...value };
     } else {
       next[key] = value;
     }

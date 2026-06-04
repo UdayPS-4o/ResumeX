@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import { complete } from '../providers/index.js';
-import { buildAtsPrompt } from '../prompts/ats.js';
-import { runAtsChecks } from '../services/atsChecks.js';
+import { complete, buildAtsPrompt, parseModelJson } from '@resumex/llm';
+import { runAtsChecks } from '@resumex/ats';
 
 const router = Router();
 
@@ -26,7 +25,7 @@ router.post('/', async (req, res, next) => {
           messages: [{ role: 'user', content: prompt }],
           jsonMode: true,
         });
-        llm = parseJsonLoose(text);
+        llm = parseModelJson(text);
       } catch (e) {
         llm = { error: e.message };
       }
@@ -43,16 +42,6 @@ function gradeFor(score) {
   if (score >= 70) return 'Good';
   if (score >= 50) return 'Needs work';
   return 'Poor';
-}
-
-function parseJsonLoose(text) {
-  if (!text) return null;
-  let s = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
-  try { return JSON.parse(s); } catch {}
-  const first = s.indexOf('{');
-  const last = s.lastIndexOf('}');
-  if (first === -1 || last === -1) return null;
-  try { return JSON.parse(s.slice(first, last + 1)); } catch { return null; }
 }
 
 export default router;

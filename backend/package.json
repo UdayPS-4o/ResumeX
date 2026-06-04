@@ -11,6 +11,10 @@
     "prerender": "node scripts/prerender-previews.mjs"
   },
   "dependencies": {
+    "@resumex/core": "*",
+    "@resumex/renderer": "*",
+    "@resumex/ats": "*",
+    "@resumex/llm": "*",
     "@anthropic-ai/sdk": "^0.32.1",
     "@google/generative-ai": "^0.21.0",
     "cors": "^2.8.5",

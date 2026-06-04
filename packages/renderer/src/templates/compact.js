@@ -1,6 +1,6 @@
 // Compact technical resume — tight spacing, sans-serif, single column,
 // emphasizing density without sacrificing scannability.
-import { tex, hrefTex, dateRange, orderSections, mdTex, sectionTitle } from '../services/latex.js';
+import { tex, hrefTex, dateRange, orderSections, mdTex, sectionTitle } from '../latex.js';
 
 export const META = {
   name: 'Compact',

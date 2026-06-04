@@ -9,10 +9,11 @@
     ".": {
       "types": "./index.d.ts",
       "import": "./src/index.js"
-    },
-    "./templates": "./src/templates/index.js",
-    "./latex": "./src/latex.js",
-    "./schema": "./src/schema.js"
+    }
+  },
+  "dependencies": {
+    "@resumex/renderer": "*",
+    "@resumex/core": "*"
   },
   "files": [
     "src",

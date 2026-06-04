@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listTemplates, getSeed } from '../templates/index.js';
+import { listTemplates, getSeed } from '@resumex/renderer';
 
 const router = Router();
 

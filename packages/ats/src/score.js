@@ -1,6 +1,9 @@
 // Deterministic ATS (Applicant Tracking System) checks over the resume JSON.
-// These are fast, reliable, and don't need an LLM. The route layers LLM
-// keyword suggestions on top.
+// These are fast, reliable, and don't need an LLM. Callers (the backend route)
+// can layer LLM keyword suggestions on top.
+//
+// Ported from backend/src/services/atsChecks.js (canonical scoring/weighting)
+// and frontend/src/lib/ats.js (adds the `grade` field the UI relies on).
 
 const STRONG_VERBS = new Set([
   'led','built','designed','developed','created','launched','shipped','improved',
@@ -111,7 +114,14 @@ export function runAtsChecks(resume) {
   }
 
   const score = breakdown.reduce((s, b) => s + b.score, 0);
-  return { score, breakdown, issues, passed };
+  return { score, grade: gradeFor(score), breakdown, issues, passed };
+}
+
+export function gradeFor(score) {
+  if (score >= 85) return 'Excellent';
+  if (score >= 70) return 'Good';
+  if (score >= 50) return 'Needs work';
+  return 'Poor';
 }
 
 function collectBullets(r) {

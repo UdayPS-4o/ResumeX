@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import { complete, streamComplete } from '../providers/index.js';
-import { buildSystemPrompt, buildImportPrompt, RESUME_DELIM } from '../prompts/builder.js';
-import { emptyResume, mergeResume } from '../schema.js';
+import { complete, streamComplete, buildSystemPrompt, buildImportPrompt, RESUME_DELIM, parseModelJson } from '@resumex/llm';
+import { emptyResume, mergeResume } from '@resumex/core';
 
 const router = Router();
 
@@ -111,7 +110,7 @@ function splitResponse(text) {
   const idx = text.indexOf(RESUME_DELIM);
   if (idx === -1) {
     // Maybe the model returned the old {message, resume} JSON shape — try that.
-    const obj = parseJsonLoose(text);
+    const obj = parseModelJson(text);
     if (obj && (obj.message || obj.resume)) {
       return { message: obj.message || '', resumeJson: obj.resume || null };
     }
@@ -119,17 +118,7 @@ function splitResponse(text) {
   }
   const message = text.slice(0, idx).trim();
   const jsonPart = text.slice(idx + RESUME_DELIM.length);
-  return { message, resumeJson: parseJsonLoose(jsonPart) };
-}
-
-function parseJsonLoose(text) {
-  if (!text) return null;
-  let s = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
-  try { return JSON.parse(s); } catch {}
-  const first = s.indexOf('{');
-  const last = s.lastIndexOf('}');
-  if (first === -1 || last === -1 || last <= first) return null;
-  try { return JSON.parse(s.slice(first, last + 1)); } catch { return null; }
+  return { message, resumeJson: parseModelJson(jsonPart) };
 }
 
 export default router;

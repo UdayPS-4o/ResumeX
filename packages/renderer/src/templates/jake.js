@@ -1,6 +1,6 @@
 // Jake Gutierrez resume — the popular GitHub template, MIT-licensed.
 // https://github.com/jakegut/resume
-import { tex, mdTex, hrefTex, dateRange, orderSections, sectionTitle } from '../services/latex.js';
+import { tex, mdTex, hrefTex, dateRange, orderSections, sectionTitle } from '../latex.js';
 
 export const META = {
   name: 'Jake',
