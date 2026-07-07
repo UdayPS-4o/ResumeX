@@ -20,14 +20,16 @@ import { fileURLToPath } from 'node:url';
 let cachedEngine; // undefined = not checked, null = none, else the command/path
 
 // Resolved relative to this file so it works wherever the repo is cloned.
+const VENDOR_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'vendor');
 const VENDORED_TYPST = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'vendor',
+  VENDOR_ROOT,
   'typst',
   `typst${process.platform === 'win32' ? '.exe' : ''}`,
 );
+// Fallback fonts (Arimo/Tinos/Cousine, vendored by scripts/install-engine.mjs)
+// so a resume's font stack always resolves regardless of what's installed on
+// the host OS — Typst ships with no bundled fonts of its own.
+const VENDORED_FONTS = join(VENDOR_ROOT, 'fonts');
 
 function runsOk(cmd) {
   try {
@@ -80,49 +82,62 @@ export async function compileTypst(source) {
   try {
     await writeFile(inFile, source, 'utf8');
 
-    // Use async spawn so we never block the Node.js event loop while Typst runs.
-    const pdf = await new Promise((resolve, reject) => {
-      const child = spawn(
-        bin,
-        ['compile', '--root', repoRoot, '--format', 'pdf', inFile, outFile],
-        { stdio: 'pipe' },
-      );
-
-      let stderr = '';
-      let stdout = '';
-      child.stderr?.on('data', (d) => { stderr += d.toString(); });
-      child.stdout?.on('data', (d) => { stdout += d.toString(); });
-
-      const timer = setTimeout(() => {
-        child.kill();
-        reject(new Error('Typst compile timed out after 60s'));
-      }, 60_000);
-
-      child.on('error', (e) => { clearTimeout(timer); reject(e); });
-      child.on('close', async (code) => {
-        clearTimeout(timer);
-        if (!existsSync(outFile)) {
-          const msg = (stderr || stdout || 'unknown error')
-            .split('\n')
-            .filter(Boolean)
-            .slice(-6)
-            .join('\n');
-          const err = new Error(`Typst compile failed: ${msg}`);
-          err.status = 502;
-          return reject(err);
-        }
-        try {
-          resolve(await readFile(outFile));
-        } catch (e) {
-          reject(e);
-        }
-      });
-    });
-
-    return pdf;
+    try {
+      return await runTypstCompile(bin, repoRoot, inFile, outFile, { ignoreSystemFonts: false });
+    } catch (e) {
+      // A font resolution issue is machine-specific (missing/corrupt system
+      // font) and shouldn't be a hard failure — retry using ONLY the vendored
+      // Arimo/Tinos/Cousine fonts, which are guaranteed present, so the user
+      // still gets a PDF (system font, if any, just wasn't usable this time).
+      if (!existsSync(VENDORED_FONTS)) throw e;
+      return await runTypstCompile(bin, repoRoot, inFile, outFile, { ignoreSystemFonts: true });
+    }
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+function runTypstCompile(bin, repoRoot, inFile, outFile, { ignoreSystemFonts }) {
+  // Use async spawn so we never block the Node.js event loop while Typst runs.
+  return new Promise((resolve, reject) => {
+    const fontArgs = existsSync(VENDORED_FONTS) ? ['--font-path', VENDORED_FONTS] : [];
+    if (ignoreSystemFonts) fontArgs.push('--ignore-system-fonts');
+    const child = spawn(
+      bin,
+      ['compile', '--root', repoRoot, ...fontArgs, '--format', 'pdf', inFile, outFile],
+      { stdio: 'pipe' },
+    );
+
+    let stderr = '';
+    let stdout = '';
+    child.stderr?.on('data', (d) => { stderr += d.toString(); });
+    child.stdout?.on('data', (d) => { stdout += d.toString(); });
+
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('Typst compile timed out after 60s'));
+    }, 60_000);
+
+    child.on('error', (e) => { clearTimeout(timer); reject(e); });
+    child.on('close', async (code) => {
+      clearTimeout(timer);
+      if (!existsSync(outFile)) {
+        const msg = (stderr || stdout || 'unknown error')
+          .split('\n')
+          .filter(Boolean)
+          .slice(-6)
+          .join('\n');
+        const err = new Error(`Typst compile failed: ${msg}`);
+        err.status = 502;
+        return reject(err);
+      }
+      try {
+        resolve(await readFile(outFile));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
 }
 
 // ── Warmup ──────────────────────────────────────────────────────────────────

@@ -108,10 +108,18 @@ const ACCENT_COLOR_MAP = {
   red: '#DC2626',
 };
 
+// Every stack ends on Arimo/Tinos/Cousine — Google's metric-compatible clones
+// of Arial/Times New Roman/Courier New, vendored into backend/vendor/fonts by
+// scripts/install-engine.mjs and always passed to Typst via --font-path (see
+// typstCompiler.js). This guarantees the tuple always resolves. Generic CSS-
+// style keywords like "serif"/"sans-serif"/"monospace" are NOT valid Typst
+// font family names — Typst has no bundled fonts and errors with "unknown
+// font family" if every named family in the tuple goes unresolved, so never
+// add one here.
 const FONT_STACKS = {
-  serif: '("Georgia", "Liberation Serif", "Times New Roman", "Times", "serif")',
-  'sans-serif': '("Liberation Sans", "Arial", "Helvetica Neue", "Helvetica", "sans-serif")',
-  mono: '("DejaVu Sans Mono", "Liberation Mono", "Consolas", "Courier New", "Courier", "monospace")',
+  serif: '("Georgia", "Liberation Serif", "Times New Roman", "Times", "Tinos")',
+  'sans-serif': '("Liberation Sans", "Arial", "Helvetica Neue", "Helvetica", "Arimo")',
+  mono: '("DejaVu Sans Mono", "Liberation Mono", "Consolas", "Courier New", "Courier", "Cousine")',
 };
 
 const RULE_PT = { thin: 0.3, medium: 0.6, thick: 1.5 };

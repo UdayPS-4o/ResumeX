@@ -20,6 +20,15 @@ const REPO = resolve(HERE, '..');
 const IS_WIN = process.platform === 'win32';
 const TYPST_DIR = join(REPO, 'backend', 'vendor', 'typst');
 const TYPST_BIN = join(TYPST_DIR, `typst${IS_WIN ? '.exe' : ''}`);
+const FONTS_DIR = join(REPO, 'backend', 'vendor', 'fonts');
+// Arimo/Tinos/Cousine are Google's metric-compatible clones of Arial/Times New
+// Roman/Courier New (same lineage as Red Hat's Liberation fonts). Vendoring
+// them guarantees every FONT_STACKS fallback in packages/renderer/src/typst.js
+// resolves even on a machine with none of Georgia/Arial/Times/Consolas
+// installed — Typst has no bundled fonts of its own, so without this, a
+// resume's font tuple can bottom out on a literal string like "serif" and
+// fail the compile (`unknown font family: serif`).
+const FONT_FAMILIES = ['Arimo', 'Tinos', 'Cousine'];
 
 const args = new Set(process.argv.slice(2));
 const FORCE = args.has('--force');
@@ -156,6 +165,32 @@ async function installTypst() {
   return true;
 }
 
+async function installFonts() {
+  const have = existsSync(FONTS_DIR) && readdirSync(FONTS_DIR).filter((f) => f.endsWith('.ttf')).length >= FONT_FAMILIES.length * 4;
+  if (!FORCE && have) {
+    if (!AUTO) log(`✓ Fallback fonts already vendored  (${FONTS_DIR})`);
+    return false;
+  }
+  if (AUTO) log('Vendoring fallback fonts (one-time)…');
+  log('Fetching fallback fonts (Arimo/Tinos/Cousine)…');
+  const families = FONT_FAMILIES.map((f) => `family=${f}:ital,wght@0,400;0,700;1,400;1,700`).join('&');
+  const cssRes = await fetch(`https://fonts.googleapis.com/css2?${families}&display=swap`, {
+    headers: { 'user-agent': 'Mozilla/5.0 resumex-setup' },
+  });
+  if (!cssRes.ok) throw new Error(`font metadata fetch failed: HTTP ${cssRes.status}`);
+  const css = await cssRes.text();
+  const urls = [...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/g)].map((m) => m[1]);
+  if (urls.length < FONT_FAMILIES.length * 4) throw new Error('font metadata missing expected file URLs');
+
+  await mkdir(FONTS_DIR, { recursive: true });
+  for (const url of urls) {
+    const name = url.split('/').pop();
+    await download(url, join(FONTS_DIR, name));
+  }
+  log(`✓ Installed ${urls.length} fallback font files → ${FONTS_DIR}`);
+  return true;
+}
+
 const SAMPLE = {
   name: 'Ada Lovelace', headline: 'Mathematician & Computing Pioneer',
   contact: { email: 'ada@example.com', phone: '+44 20 7946 0000', location: 'London, UK',
@@ -192,7 +227,7 @@ async function warm() {
     for (const t of listTemplates()) {
       const file = join(dir, `${t.id}.typ`);
       await writeFile(file, renderTemplate(t.id, getSeed(t.id) || SAMPLE), 'utf8');
-      const r = spawnSync(TYPST_BIN, ['compile', '--root', REPO, file, join(dir, `${t.id}.pdf`)],
+      const r = spawnSync(TYPST_BIN, ['compile', '--root', REPO, '--font-path', FONTS_DIR, file, join(dir, `${t.id}.pdf`)],
         { cwd: dir, stdio: 'pipe', timeout: 120_000 });
       if (existsSync(join(dir, `${t.id}.pdf`))) { log(`  ✓ ${t.id}`); ok++; }
       else { log(`  ✗ ${t.id}: ${(r.stderr?.toString() || '').split('\n').filter(Boolean).slice(-2).join(' ')}`); fail++; }
@@ -205,7 +240,9 @@ async function warm() {
 
 try {
   const typstFresh = await installTypst();
-  const shouldCheck = !SKIP_WARM && (!AUTO || typstFresh);
+  const fontsFresh = await installFonts();
+  const fresh = typstFresh || fontsFresh;
+  const shouldCheck = !SKIP_WARM && (!AUTO || fresh);
   if (shouldCheck) {
     try { await warm(); }
     catch (e) { log(`\n! Template check skipped: ${e.message}`); }
@@ -213,7 +250,7 @@ try {
     log('\nSkipped template check (--skip-warm).');
   }
 
-  if (typstFresh || !AUTO) {
+  if (fresh || !AUTO) {
     log('\n✓ Done. Templates compile via Typst.');
     log('  Verify: GET http://localhost:8000/api/health → "compile": { "typst": true }');
   }
