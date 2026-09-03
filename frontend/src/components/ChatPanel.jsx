@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fileToImagePart } from '../lib/image.js';
-import { useDropzone, usePaste } from 'clipboard-drop/react';
+import { useDropzone, usePaste } from '../lib/dropzone.js';
 
 export default function ChatPanel({ messages, sending, onSend, onInsert, onUndo, onDismiss, onRetry, onImportFile, onOptimize, onUndoStyle, onOpenDocuments, onDownloadCoverLetter, placeholder }) {
   const [draft, setDraft] = useState('');

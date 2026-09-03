@@ -3,7 +3,6 @@
 import { lazy, Suspense } from 'react';
 import App from '@/components/App.jsx';
 import AuthGate from '@/components/AuthGate.jsx';
-import 'clipboard-drop';
 
 const Showcase = lazy(() => import('@/showcase/Showcase'));
 

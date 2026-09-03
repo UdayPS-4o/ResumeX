@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../lib/api.js';
 import ResumePreview, { SAMPLE_RESUME } from './ResumePreview.jsx';
-import { useDropzone } from 'clipboard-drop/react';
+import { useDropzone } from '../lib/dropzone.js';
 
 // Two-step new resume flow:
 //   Step 1 — pick a template (grid, click to select, Next button)
