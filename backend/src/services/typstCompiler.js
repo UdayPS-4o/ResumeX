@@ -122,11 +122,20 @@ function runTypstCompile(bin, repoRoot, inFile, outFile, { ignoreSystemFonts }) 
     child.on('close', async (code) => {
       clearTimeout(timer);
       if (!existsSync(outFile)) {
-        const msg = (stderr || stdout || 'unknown error')
-          .split('\n')
-          .filter(Boolean)
-          .slice(-6)
-          .join('\n');
+        const raw = (stderr || stdout || 'unknown error').trim();
+        const lines = raw.split('\n').map((l) => l.trimEnd()).filter(Boolean);
+        const errorIdx = lines.findIndex((l) => /^error(\[.*\])?:/.test(l));
+        let msg;
+        if (errorIdx !== -1) {
+          const errorLines = [];
+          for (let i = errorIdx; i < lines.length && errorLines.length < 12; i++) {
+            if (i > errorIdx && /^warning(\[.*\])?:/.test(lines[i])) break;
+            errorLines.push(lines[i]);
+          }
+          msg = errorLines.join('\n');
+        } else {
+          msg = lines.slice(-6).join('\n');
+        }
         const err = new Error(`Typst compile failed: ${msg}`);
         err.status = 502;
         return reject(err);

@@ -28,27 +28,67 @@ function toMessages(system, messages) {
   ];
 }
 
+function getClient(baseUrl, apiKey) {
+  const normalized = normalizeBase(baseUrl);
+  const defaultHeaders = normalized?.includes('openrouter.ai')
+    ? { 'HTTP-Referer': 'http://localhost:3000', 'X-Title': 'ResumeX' }
+    : undefined;
+  return new OpenAI({ baseURL: normalized, apiKey: apiKey || 'sk-noauth', defaultHeaders });
+}
+
 export async function openaiCompatibleComplete({ apiKey, model, system, messages, jsonMode, temperature, baseUrl }) {
-  const client = new OpenAI({ baseURL: normalizeBase(baseUrl), apiKey: apiKey || 'sk-noauth' });
-  const resp = await client.chat.completions.create({
-    model,
-    temperature: temperature ?? 0.4,
-    messages: toMessages(system, messages),
-    response_format: jsonMode ? { type: 'json_object' } : undefined,
-  });
-  const text = resp.choices?.[0]?.message?.content || '';
-  return { text };
+  const client = getClient(baseUrl, apiKey);
+  const isOR = Boolean(baseUrl?.includes('openrouter.ai'));
+  try {
+    const resp = await client.chat.completions.create({
+      model,
+      temperature: temperature ?? 0.4,
+      messages: toMessages(system, messages),
+      response_format: jsonMode ? { type: 'json_object' } : undefined,
+    });
+    const text = resp.choices?.[0]?.message?.content || '';
+    return { text };
+  } catch (err) {
+    if (isOR && model !== 'openrouter/free' && (err.status === 429 || err.code === 429)) {
+      console.warn(`[openrouter] Model "${model}" rate limited (429), automatically falling back to openrouter/free`);
+      const resp = await client.chat.completions.create({
+        model: 'openrouter/free',
+        temperature: temperature ?? 0.4,
+        messages: toMessages(system, messages),
+        response_format: jsonMode ? { type: 'json_object' } : undefined,
+      });
+      const text = resp.choices?.[0]?.message?.content || '';
+      return { text };
+    }
+    throw err;
+  }
 }
 
 // Streaming variant — async-yields text deltas. Same wire format as openaiStream.
 export async function* openaiCompatibleStream({ apiKey, model, system, messages, temperature, baseUrl }) {
-  const client = new OpenAI({ baseURL: normalizeBase(baseUrl), apiKey: apiKey || 'sk-noauth' });
-  const stream = await client.chat.completions.create({
-    model,
-    temperature: temperature ?? 0.4,
-    messages: toMessages(system, messages),
-    stream: true,
-  });
+  const client = getClient(baseUrl, apiKey);
+  const isOR = Boolean(baseUrl?.includes('openrouter.ai'));
+  let stream;
+  try {
+    stream = await client.chat.completions.create({
+      model,
+      temperature: temperature ?? 0.4,
+      messages: toMessages(system, messages),
+      stream: true,
+    });
+  } catch (err) {
+    if (isOR && model !== 'openrouter/free' && (err.status === 429 || err.code === 429)) {
+      console.warn(`[openrouter] Model "${model}" rate limited (429), automatically falling back to openrouter/free stream`);
+      stream = await client.chat.completions.create({
+        model: 'openrouter/free',
+        temperature: temperature ?? 0.4,
+        messages: toMessages(system, messages),
+        stream: true,
+      });
+    } else {
+      throw err;
+    }
+  }
   for await (const chunk of stream) {
     const t = chunk.choices?.[0]?.delta?.content;
     if (t) yield t;

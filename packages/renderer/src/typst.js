@@ -66,7 +66,7 @@ export function typPaper(pageSize) {
 // the repository root.
 export function typIcon(name, show = true) {
   if (!name || !show) return '';
-  return `#box(baseline: 20%, height: 0.9em, image.decode(read("/packages/renderer/icons/${name}.svg").replace("<svg ", "<svg fill=\\"" + icon-color.to-hex() + "\\" ")))`;
+  return `#box(baseline: 20%, height: 0.9em, image(bytes(read("/packages/renderer/icons/${name}.svg").replace("<svg ", "<svg fill=\\"" + icon-color.to-hex() + "\\" ")), format: "svg"))`;
 }
 
 // ── Customization resolver ─────────────────────────────────────────────────
