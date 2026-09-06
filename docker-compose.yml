@@ -24,8 +24,6 @@ services:
       - BACKEND_URL=http://api:8000
     depends_on:
       - api
-    ports:
-      - "3000:3000"
     networks:
       - internal
       - dokploy-network
