@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    container_name: resumex-api
     environment:
       - PORT=8000
       - COMPILE_MODE=auto
@@ -20,8 +21,13 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.web
+    container_name: resumex-web
     environment:
-      - BACKEND_URL=http://api:8000
+      # Plain "api" collides with any other project on the shared
+      # dokploy-network that also names a service "api" (Compose registers
+      # the bare service name as a DNS alias network-wide) — use the
+      # unique container_name instead.
+      - BACKEND_URL=http://resumex-api:8000
     depends_on:
       - api
     networks:
