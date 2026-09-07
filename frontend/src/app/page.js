@@ -12,12 +12,11 @@ import AppShell from '@/components/AppShell.jsx';
 /**
  * Fetch the template list server-side with a 5-minute ISR cache.
  * Falls back to [] so a backend outage never breaks the page load.
- * The backend URL is resolved through Next.js rewrites in next.config.mjs.
  */
 async function fetchTemplates() {
   try {
-    const backendPort = process.env.BACKEND_PORT || 8000;
-    const res = await fetch(`http://localhost:${backendPort}/api/templates`, {
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.BACKEND_PORT || 8000}`;
+    const res = await fetch(`${backendUrl}/api/templates`, {
       cache: 'no-store', // always fetch fresh on page load
     });
     if (!res.ok) throw new Error('Templates fetch failed');

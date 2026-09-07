@@ -6,7 +6,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const frontendPort = process.env.PORT || process.env.FRONTEND_PORT || 3000;
-const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.BACKEND_PORT || 8000}`;
 
 // Pre-compile routes on startup to eliminate cold-start latency
 if (process.env.NODE_ENV === 'development') {
@@ -29,14 +28,10 @@ const nextConfig = {
   turbopack: {
     root: path.resolve(__dirname, '../..'),
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
-  },
+  // /api/* is proxied by the app/api/[...path] route handler instead of
+  // rewrites(): rewrite destinations are resolved at `next build` time, but
+  // BACKEND_URL is only set at container runtime, so a rewrite here would
+  // permanently bake in the http://localhost fallback.
 };
 
 export default nextConfig;

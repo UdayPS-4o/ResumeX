@@ -38,9 +38,6 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`h-full ${inter.variable}`}>
-      <head>
-        <link rel="preconnect" href="http://localhost:8000" />
-      </head>
       <body className="bg-slate-50 text-slate-900 antialiased h-full font-sans">
         {children}
       </body>

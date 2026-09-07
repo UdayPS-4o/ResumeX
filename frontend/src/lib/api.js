@@ -1,6 +1,6 @@
 // Tiny wrapper around fetch with JSON helpers and shared error handling.
-// Same-origin requests (proxied to the backend by next.config.mjs) carry the
-// session cookie automatically, so auth/data calls need no extra config.
+// Same-origin requests (proxied to the backend by app/api/[...path]/route.js)
+// carry the session cookie automatically, so auth/data calls need no extra config.
 
 async function readError(resp) {
   let detail = '';
