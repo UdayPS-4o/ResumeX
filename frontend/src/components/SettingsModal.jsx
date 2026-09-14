@@ -28,7 +28,8 @@ export default function SettingsModal({ settings, onClose, onSave }) {
   const provider = draft.provider;
   const cfg = PROVIDERS[provider] || {};
   const isCompatible = cfg.kind === 'compatible';
-  const baseUrl = isCompatible ? baseUrlFor(provider, draft) : '';
+  const showBaseUrl = isCompatible || provider === 'anthropic';
+  const baseUrl = showBaseUrl ? baseUrlFor(provider, draft) : '';
 
   function patch(p) {
     setDraft(d => ({ ...d, ...p }));
@@ -139,8 +140,8 @@ export default function SettingsModal({ settings, onClose, onSave }) {
             </datalist>
           </section>
 
-          {/* Base URL — compatible providers only */}
-          {isCompatible && (
+          {/* Base URL — compatible providers and Anthropic (for OpusMax etc.) */}
+          {(isCompatible || provider === 'anthropic') && (
             <section className="reveal">
               <label className="rx-eyebrow block mb-2" htmlFor="rx-baseurl">Base URL</label>
               <input
@@ -148,11 +149,15 @@ export default function SettingsModal({ settings, onClose, onSave }) {
                 className="field font-mono"
                 value={baseUrl}
                 onChange={e => setBaseUrl(e.target.value)}
-                placeholder={cfg.baseUrl || 'http://localhost:1234/v1'}
+                placeholder={cfg.baseUrl || (provider === 'anthropic' ? 'https://api.opusmax.pro' : 'http://localhost:1234/v1')}
                 spellCheck={false}
                 autoComplete="off"
               />
-              <p className="text-xs text-slate-500 mt-1.5">OpenAI-compatible endpoint (Chat Completions).</p>
+              <p className="text-xs text-slate-500 mt-1.5">
+                {provider === 'anthropic'
+                  ? 'Anthropic-compatible proxy (leave blank for api.anthropic.com).'
+                  : 'OpenAI-compatible endpoint (Chat Completions).'}
+              </p>
             </section>
           )}
 

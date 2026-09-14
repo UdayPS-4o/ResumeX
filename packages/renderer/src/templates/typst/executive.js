@@ -224,11 +224,18 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
   below: 0pt,
   width: 100%,
 )[
-  #grid(columns: (1fr, auto), align: (left, right), [#strong[#title-co]], [#date])
-  #if location != none [
-    #v(2pt)
-    #text(size: 0.9em, fill: subtext)[#location]
-  ]
+  #grid(
+    columns: (1fr, auto),
+    align: (left, right),
+    [
+      #strong[#title-co]
+      #if location != none [
+        #linebreak()
+        #text(size: 0.9em, fill: subtext)[#location]
+      ]
+    ],
+    [#date],
+  )
   #if description != none [
     #v(3pt)
     #description

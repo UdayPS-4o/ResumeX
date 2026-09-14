@@ -26,6 +26,7 @@ function normalize(e) {
     job: e.job ?? null,
     matchScore: e.matchScore ?? null,
     documents: e.documents || {},
+    formatting: e.formatting || {},
     createdAt: e.createdAt,
     updatedAt: e.updatedAt,
   };
@@ -63,6 +64,7 @@ export function create(userId, templateId, init = {}) {
     job: init.job ?? null,
     matchScore: init.matchScore ?? null,
     documents: init.documents || {},
+    formatting: init.formatting || {},
     createdAt: ts,
     updatedAt: ts,
   };
@@ -91,10 +93,11 @@ export function createVariant(userId, parentId, init = {}) {
     job,
     matchScore: init.matchScore ?? null,
     documents: init.documents || {},
+    formatting: init.formatting || { ...(master.formatting || {}) },
   });
 }
 
-const PATCHABLE = ['title', 'templateId', 'pageSize', 'trim', 'resume', 'messages', 'job', 'matchScore', 'documents'];
+const PATCHABLE = ['title', 'templateId', 'pageSize', 'trim', 'resume', 'messages', 'job', 'matchScore', 'documents', 'formatting'];
 
 export function update(userId, id, patch = {}) {
   const cur = get(userId, id);
@@ -141,5 +144,6 @@ export function duplicate(userId, id) {
     messages: [...src.messages],
     job: src.job ? { ...src.job } : null,
     documents: { ...(src.documents || {}) },
+    formatting: { ...(src.formatting || {}) },
   });
 }

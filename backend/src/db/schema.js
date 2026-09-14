@@ -74,6 +74,7 @@ export const resumes = sqliteTable('resumes', {
   job: text('job', { mode: 'json' }), // null | { description, company, role, ... }
   matchScore: integer('match_score'), // null | number
   documents: text('documents', { mode: 'json' }).notNull().default('{}'),
+  formatting: text('formatting', { mode: 'json' }).notNull().default('{}'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

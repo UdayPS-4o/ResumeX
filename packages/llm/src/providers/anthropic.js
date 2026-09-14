@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-export async function anthropicComplete({ apiKey, model, system, messages, jsonMode, temperature }) {
-  const client = new Anthropic({ apiKey });
+export async function anthropicComplete({ apiKey, model, system, messages, jsonMode, temperature, baseUrl }) {
+  const client = new Anthropic({ apiKey, baseURL: baseUrl || undefined });
 
   // Anthropic doesn't have a flat "JSON mode" flag — we hint it in the system prompt
   // (the builder/job-match prompts already do this) and parse the text.
@@ -45,8 +45,8 @@ function toAnthropicMessages(messages) {
 }
 
 // Streaming variant — async-yields text deltas.
-export async function* anthropicStream({ apiKey, model, system, messages }) {
-  const client = new Anthropic({ apiKey });
+export async function* anthropicStream({ apiKey, model, system, messages, baseUrl }) {
+  const client = new Anthropic({ apiKey, baseURL: baseUrl || undefined });
   const stream = await client.messages.create({
     model,
     max_tokens: 4096,
