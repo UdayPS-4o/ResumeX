@@ -1,0 +1,1 @@
+ALTER TABLE `resumes` ADD `formatting` text DEFAULT '{}' NOT NULL;
