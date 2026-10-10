@@ -18,6 +18,8 @@ const RULE_THICKNESS = ['thin', 'medium', 'thick'];
 const SKILLS_LAYOUTS = ['inline', 'grouped', 'bulleted'];
 const SIDEBAR_WIDTHS = ['narrow', 'medium', 'wide'];
 const NAME_TRANSFORMS = ['normal', 'uppercase', 'small-caps', 'lowercase', 'none'];
+const HEADER_ALIGNS = ['left', 'center', 'right'];
+const CONTACT_SEPARATORS = ['pipe', 'dot', 'dash', 'space'];
 const PAGE_SIZES = ['a4', 'legal'];
 const TONES = ['professional', 'warm', 'direct'];
 const CHANNELS = ['linkedin', 'email'];
@@ -97,6 +99,18 @@ export function normalizeFormatting(raw, capabilities = null) {
   if (allow('fonts') && 'headerFont' in f) { if (inEnum(f.headerFont, FONTS)) fs.headerFont = f.headerFont; else if (isClear(f.headerFont)) fs.headerFont = undefined; }
   if (allow('fonts') && 'bodyFont' in f) { if (inEnum(f.bodyFont, FONTS)) fs.bodyFont = f.bodyFont; else if (isClear(f.bodyFont)) fs.bodyFont = undefined; }
   if (Object.keys(fs).length) out.fontSize = fs;
+
+  // Header block (name + contact line).
+  const h = raw.header && typeof raw.header === 'object' ? raw.header : {};
+  const hd = {};
+  if (allow('nameSize') && isNum(h.nameSize)) hd.nameSize = clampLevel(h.nameSize);
+  if (allow('contactSize') && isNum(h.contactSize)) hd.contactSize = clampLevel(h.contactSize);
+  for (const [key, list, capKey] of [['align', HEADER_ALIGNS, 'headerAlign'], ['contactSeparator', CONTACT_SEPARATORS, 'contactSeparator']]) {
+    if (!allow(capKey) || !(key in h)) continue;
+    if (inEnum(h[key], list)) hd[key] = h[key];
+    else if (isClear(h[key])) hd[key] = undefined;
+  }
+  if (Object.keys(hd).length) out.header = hd;
 
   // Margins (mm).
   if (allow('margins') && raw.margins && typeof raw.margins === 'object') {
@@ -211,6 +225,12 @@ function describeFormatting(f) {
     if (f.fontSize.headerScale != null) bits.push(`header size ${f.fontSize.headerScale}`);
     if ('headerFont' in f.fontSize) bits.push(`header font ${fontName(f.fontSize.headerFont)}`);
     if ('bodyFont' in f.fontSize) bits.push(`body font ${fontName(f.fontSize.bodyFont)}`);
+  }
+  if (f.header) {
+    if (f.header.nameSize != null) bits.push(`name size ${f.header.nameSize}`);
+    if (f.header.contactSize != null) bits.push(`contact size ${f.header.contactSize}`);
+    if ('align' in f.header) bits.push(`header ${f.header.align ?? 'template'}-aligned`);
+    if ('contactSeparator' in f.header) bits.push(`contact separator ${f.header.contactSeparator ?? 'template'}`);
   }
   if (f.margins) bits.push('margins');
   if ('bulletStyle' in f) bits.push(`bullets ${f.bulletStyle ?? 'template'}`);

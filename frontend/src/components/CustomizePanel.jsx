@@ -39,6 +39,26 @@ const SKILLS_LAYOUTS = [
   { id: 'bulleted', label: 'Bullets' },
 ];
 
+// Header block (name + contact line). Same "native option is pre-selected" rule.
+const NAME_STYLES = [
+  { id: 'normal',     label: 'Aa' },
+  { id: 'uppercase',  label: 'AA' },
+  { id: 'small-caps', label: 'Sᴍᴀʟʟ' },
+];
+
+const CONTACT_SEPARATORS = [
+  { id: 'pipe',  label: '|' },
+  { id: 'dot',   label: '•' },
+  { id: 'dash',  label: '–' },
+  { id: 'space', label: 'Space' },
+];
+
+const HEADER_ALIGNS = [
+  { id: 'left',   label: 'Left' },
+  { id: 'center', label: 'Center' },
+  { id: 'right',  label: 'Right' },
+];
+
 const SIDEBAR_WIDTHS = [
   { id: 'narrow', label: 'Narrow' },
   { id: 'medium', label: 'Medium' },
@@ -56,6 +76,7 @@ const ALL_CAPS = {
   accent: true, margins: true, fonts: true, baseSize: true, headerScale: true,
   spacing: true, lineHeight: true, bulletStyle: true, ruleThickness: true,
   nameTransform: true, skillsLayout: true, justify: true, sidebarWidth: true,
+  nameSize: true, contactSize: true, contactSeparator: true, headerAlign: true,
 };
 
 const DEFAULT_FORMATTING = {
@@ -82,6 +103,7 @@ export default function CustomizePanel({
   const handleMarginsChange = (patch) => update({ margins: { ...(settings.margins || {}), ...patch } });
   const handleSpacingChange = (key, val) => update({ spacing: { ...(settings.spacing || {}), [key]: val } });
   const handleFontChange = (key, val) => update({ fontSize: { ...(settings.fontSize || {}), [key]: val } });
+  const handleHeaderChange = (key, val) => update({ header: { ...(settings.header || {}), [key]: val } });
   const handleReset = () => onChange({ ...DEFAULT_FORMATTING });
 
   const activeDensity = DENSITY_PRESETS.find((p) =>
@@ -124,6 +146,7 @@ export default function CustomizePanel({
   const showSpacingSection = cap.spacing || cap.lineHeight;
   const showTypographySection = cap.baseSize || cap.headerScale || cap.fonts;
   const showStyleSection = cap.bulletStyle || cap.ruleThickness || cap.skillsLayout || cap.sidebarWidth;
+  const showHeaderSection = cap.nameSize || cap.contactSize || cap.contactSeparator || cap.headerAlign || cap.nameTransform;
 
   // If the template's native accent IS one of the preset swatches, pre-select
   // that swatch and drop the redundant "Template" chip (e.g. executive → Blue).
@@ -208,6 +231,29 @@ export default function CustomizePanel({
           </div>
 
         </Section>
+      )}
+
+      {/* ── Header (name + contact line) ─────────────────────── */}
+      {showHeaderSection && (
+        <>
+          <Divider />
+          <Section title="Header">
+            <div className="space-y-3.5">
+              {cap.nameSize && <LevelSelector label="Name Size" value={settings.header?.nameSize ?? 3} onChange={(v) => handleHeaderChange('nameSize', v)} />}
+              {cap.contactSize && <LevelSelector label="Contact Size" value={settings.header?.contactSize ?? 3} onChange={(v) => handleHeaderChange('contactSize', v)} />}
+              {cap.nameTransform && (
+                <NativeSegmented label="Name Style" options={NAME_STYLES} nativeId={ui.nameTransform} value={settings.nameTransform} onChange={(id) => update({ nameTransform: id })} />
+              )}
+              {cap.headerAlign && (
+                <NativeSegmented label="Alignment" options={HEADER_ALIGNS} nativeId={ui.headerAlign} value={settings.header?.align} onChange={(id) => handleHeaderChange('align', id)} />
+              )}
+              {cap.contactSeparator && (
+                <NativeSegmented label="Contact Separator" options={CONTACT_SEPARATORS} nativeId={ui.contactSeparator} value={settings.header?.contactSeparator} onChange={(id) => handleHeaderChange('contactSeparator', id)} />
+              )}
+              <Toggle checked={settings.showContactIcons ?? true} onChange={(v) => update({ showContactIcons: v })} label="Show contact icons" description="Display phone, email and social icons" />
+            </div>
+          </Section>
+        </>
       )}
 
       {/* ── Density preset ───────────────────────────────────── */}
@@ -335,7 +381,6 @@ export default function CustomizePanel({
           {cap.justify && (
             <Toggle checked={settings.justify ?? false} onChange={(v) => update({ justify: v })} label="Justify body text" description="Align paragraphs to both margins" />
           )}
-          <Toggle checked={settings.showContactIcons ?? true} onChange={(v) => update({ showContactIcons: v })} label="Show contact icons" description="Display phone, email and social icons" />
         </div>
       </Section>
 

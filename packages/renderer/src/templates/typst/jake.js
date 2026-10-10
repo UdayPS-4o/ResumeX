@@ -21,7 +21,7 @@ const NATIVE = {
   headingFontPt: 13,
   sectionGapPt: 12,
   entryGapPt: 10,
-  leadingEm: 0.6,
+  leadingEm: 0.7,
   paragraphGapEm: 0.85,
   bulletGapEm: 0.45,
   bulletStyle: 'bullet',
@@ -39,6 +39,7 @@ export const META = {
   accent: NATIVE.accent,
   format: 'typst',
   uiDefaults: {
+    contactSeparator: 'pipe', headerAlign: 'center',
     bulletStyle: 'bullet', ruleThickness: 'medium', nameTransform: 'small-caps',
     skillsLayout: 'inline', headerFont: 'sans-serif', bodyFont: 'sans-serif',
   },
@@ -46,6 +47,7 @@ export const META = {
   nativeMarginsMm: NATIVE.marginMm,
   // Which customization controls this template honours (drives the panel UI).
   capabilities: {
+    nameSize: true, contactSize: true, contactSeparator: true, headerAlign: true,
     accent: true, margins: true, fonts: true, baseSize: true, headerScale: true,
     spacing: true, lineHeight: true, bulletStyle: true, ruleThickness: true,
     nameTransform: true, skillsLayout: true, justify: true, sidebarWidth: false,
@@ -60,16 +62,14 @@ export function renderJake(r, opts = {}) {
   const c = r.contact || {};
   // Centered contact line, separated by " | " (matches the LaTeX $|$ separator).
   // Location is appended last, mirroring jake.js's ordering.
-  const contact = [
-    c.phone && `${typIcon('phone', showIcons)} ${typ(c.phone)}`,
-    c.email && `${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}`,
-    c.linkedin && `${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}`,
-    c.github && `${typIcon('github', showIcons)} ${typLink(c.github)}`,
-    c.website && `${typIcon('website', showIcons)} ${typLink(c.website)}`,
-    c.location && `${typIcon('location', showIcons)} ${typ(c.location)}`,
-  ]
-    .filter(Boolean)
-    .join(' #h(0.35em) | #h(0.35em) ');
+  const contact = styles.joinContact([
+    c.phone && `#box[${typIcon('phone', showIcons)} ${typ(c.phone)}]`,
+    c.email && `#box[${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}]`,
+    c.linkedin && `#box[${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}]`,
+    c.github && `#box[${typIcon('github', showIcons)} ${typLink(c.github)}]`,
+    c.website && `#box[${typIcon('website', showIcons)} ${typLink(c.website)}]`,
+    c.location && `#box[${typIcon('location', showIcons)} ${typ(c.location)}]`,
+  ].filter(Boolean), ' #h(0.35em) | #h(0.35em) ');
 
   const H = (key, fallback) => typ(sectionTitle(r, key, fallback));
   const blocks = {};
@@ -192,7 +192,7 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
 
 // Tight bullet list, slightly indented, small text. Inter-bullet spacing tracks
 // line height (bulletSpacing), never the entry gap.
-#let bullets(body) = block(above: 3pt, below: 2pt)[
+#let bullets(body) = block(above: 6pt, below: 2pt)[
   #set list(indent: 0.15in, marker: ${styles.bulletMarker}, spacing: ${styles.bulletSpacing})
   #set text(size: 0.9em)
   #set par(leading: ${styles.leading}, spacing: ${styles.bulletSpacing})
@@ -205,7 +205,7 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
   #body
 ]
 
-#align(center)[
+#align(${styles.headerAlign})[
   #text(font: ${styles.headerFont}, size: ${styles.nameFontSize})[#strong[${name}]]${
     r.headline?.trim()
       ? `\n  #linebreak()\n  #v(1pt)\n  #text(size: 1.0em)[#emph[${typ(r.headline)}]]`
@@ -213,7 +213,7 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
   }
   #linebreak()
   #v(1pt)
-  #text(size: 0.9em)[${contact}]
+  #text(size: ${styles.contactSize(0.9)})[${contact}]
 ]
 
 ${sections.join('\n\n')}

@@ -9,6 +9,7 @@ import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../.
 // customization levels scale these (level 3 == native), so an untouched resume
 // renders exactly like the original design. See generateTypstStyles().
 const NATIVE = {
+  headerAlign: 'left',
   pageSize: 'a4',
   margin: '(left: 0.6in, right: 0.6in, top: 0.6in, bottom: 0.6in)',
   marginMm: { top: 15.2, bottom: 15.2, left: 15.2, right: 15.2 },
@@ -30,6 +31,7 @@ export const META = {
   defaultPageSize: 'a4',
   format: 'typst',
   uiDefaults: {
+    headerAlign: 'left',
     bulletStyle: 'arrow', ruleThickness: 'thick', nameTransform: 'normal',
     skillsLayout: 'inline', headerFont: 'sans-serif', bodyFont: 'sans-serif',
   },
@@ -37,6 +39,7 @@ export const META = {
   nativeMarginsMm: NATIVE.marginMm,
   // Which customization controls this template honours (drives the panel UI).
   capabilities: {
+    nameSize: true, contactSize: true, contactSeparator: false, headerAlign: false,
     accent: true, margins: true, fonts: true, baseSize: true, headerScale: true,
     spacing: true, lineHeight: true, bulletStyle: true, ruleThickness: true,
     nameTransform: true, skillsLayout: true, justify: true, sidebarWidth: false,
@@ -51,12 +54,12 @@ export function renderAlta(r, opts = {}) {
 
   const c = r.contact || {};
   const contactLines = [
-    c.email && `${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}`,
-    c.phone && `${typIcon('phone', showIcons)} ${typ(c.phone)}`,
-    c.location && `${typIcon('location', showIcons)} ${typ(c.location)}`,
-    c.linkedin && `${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}`,
-    c.github && `${typIcon('github', showIcons)} ${typLink(c.github)}`,
-    c.website && `${typIcon('website', showIcons)} ${typLink(c.website)}`,
+    c.email && `#box[${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}]`,
+    c.phone && `#box[${typIcon('phone', showIcons)} ${typ(c.phone)}]`,
+    c.location && `#box[${typIcon('location', showIcons)} ${typ(c.location)}]`,
+    c.linkedin && `#box[${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}]`,
+    c.github && `#box[${typIcon('github', showIcons)} ${typLink(c.github)}]`,
+    c.website && `#box[${typIcon('website', showIcons)} ${typLink(c.website)}]`,
   ].filter(Boolean);
 
   const H = (key, fallback) => typ(sectionTitle(r, key, fallback));
@@ -179,7 +182,7 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
     ${r.headline ? `\n    #v(3pt)\n    #text(size: ${styles.baseFontSize} * 1.3, weight: "medium", fill: rgb("#2d3748"))[${typ(r.headline)}]` : ''}
   ],
   [
-    #set text(size: 0.85em, fill: rgb("#4a5568"))
+    #set text(size: ${styles.contactSize(0.85)}, fill: rgb("#4a5568"))
     #set par(leading: ${styles.leading})
     ${contactLines.join(' \\\n')}
   ]

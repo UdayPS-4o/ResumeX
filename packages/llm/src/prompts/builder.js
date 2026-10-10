@@ -83,6 +83,7 @@ const CAP_LABELS = {
   lineHeight: 'line height', bulletStyle: 'bullet style', ruleThickness: 'section rules',
   skillsLayout: 'skills layout', sidebarWidth: 'sidebar width', justify: 'justified text',
   inlineHeadline: 'inline headline', nameTransform: 'name casing',
+  nameSize: 'name size', contactSize: 'contact line size', contactSeparator: 'contact separator', headerAlign: 'header alignment',
 };
 
 function supportedControls(capabilities) {
@@ -119,6 +120,7 @@ Actions:
     "density": "compact" | "cozy" | "relaxed"   (a quick spacing preset)
     "spacing": { "section":1-5, "item":1-5, "lineHeight":1-5 }
     "fontSize": { "base":1-5, "headerScale":1-5, "headerFont":"sans-serif"|"serif"|"mono", "bodyFont":"sans-serif"|"serif"|"mono" }
+    "header": { "nameSize":1-5, "contactSize":1-5, "align":"left"|"center"|"right", "contactSeparator":"pipe"|"dot"|"dash"|"space" }   (the name + contact line at the top)
     "margins": { "top":5-30, "bottom":5-30, "left":5-30, "right":5-30 }   (millimetres)
     "bulletStyle":"none"|"bullet"|"dash"|"arrow", "ruleThickness":"thin"|"medium"|"thick",
     "skillsLayout":"inline"|"grouped"|"bulleted", "sidebarWidth":"narrow"|"medium"|"wide",
