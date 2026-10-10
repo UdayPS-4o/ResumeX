@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Resumex backend — chat-driven Typst resume builder",
+  "description": "Resumex backend \u2014 chat-driven Typst resume builder",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

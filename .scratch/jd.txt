@@ -1,0 +1,53 @@
+About Axonex
+Axonex is an innovative technology company specializing in robotics and AI solutions, delivering intelligent products across security patrol, education, and companion domains. With a strong technical team and established product portfolio, we are expanding into the mobile internet space to develop cutting-edge family-focused companion applications.
+As part of our business growth, we are looking for a talented and passionate Full Stack Web Developer to join our expanding team and help build next-generation digital platforms that integrate AI, robotics, and intelligent companion technologies.
+
+Key Responsibilities
+- Design, develop, test, and maintain scalable web applications from frontend to backend.
+- Collaborate closely with product managers, UI/UX designers, mobile developers, and AI engineers to deliver high-quality solutions.
+- Develop responsive, user-friendly, and high-performance web interfaces.
+- Build and maintain secure, reliable, and scalable backend services, APIs, and databases.
+- Integrate third-party services, cloud platforms, and AI-powered features into web applications.
+- Optimize application performance, reliability, and security.
+- Participate in technical design, code reviews, debugging, and troubleshooting activities.
+- Support deployment, monitoring, and continuous improvement of production systems.
+- Stay current with emerging technologies and industry best practices in web development and AI-driven applications.
+
+Requirements
+Basic Qualifications
+- Bachelor's degree in Computer Science, Software Engineering, Information Technology, or a related discipline.
+- Minimum 2-5 years of experience in full stack web development.
+- Proven experience in developing and delivering commercial web applications.
+- Strong analytical and problem-solving skills.
+- Good command of written and spoken English.
+
+Technical Skills
+- Proficiency in HTML5, CSS3, JavaScript, and TypeScript.
+- Experience with modern frontend frameworks such as React, Next.js, Vue.js, or Angular.
+- Solid backend development experience using Node.js, Express.js, NestJS, Python, PHP, or similar technologies.
+- Strong knowledge of database design and management, including MySQL, PostgreSQL, MongoDB, or Redis.
+- Experience developing and integrating RESTful APIs and WebSocket services.
+- Familiarity with cloud platforms such as AWS, Microsoft Azure, or Google Cloud Platform (GCP).
+- Experience using Git and collaborative version control workflows.
+- Understanding of web security principles, authentication, authorization, and data protection best practices.
+
+Core Competencies
+- Strong ownership mindset with the ability to work independently.
+- Excellent communication and teamwork skills.
+- Detail-oriented with a commitment to delivering high-quality work.
+- Ability to manage multiple projects and priorities in a fast-paced environment.
+- Passion for innovation, continuous learning, and technology advancement.
+
+Preferred Experience
+- Experience developing SaaS platforms, mobile-integrated web applications, or consumer internet products.
+- Exposure to AI, machine learning, chatbot platforms, or intelligent companion applications.
+- Experience with Agile/Scrum software development methodologies.
+- Experience designing scalable system architectures and high-availability applications.
+- Familiarity with microservices architecture and distributed systems.
+
+Additional Skills
+- Experience with Docker, Kubernetes, and CI/CD pipelines.
+- Knowledge of mobile development frameworks such as React Native or Flutter.
+- Experience integrating payment gateways, messaging platforms, or social media APIs.
+- Familiarity with AI APIs, Large Language Models (LLMs), and AI-powered application development.
+- Contributions to open-source projects or a strong personal development portfolio will be an advantage.

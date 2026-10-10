@@ -1,0 +1,73 @@
+{
+ "message": "I re-angled the résumé toward Axonex's Full Stack Web Developer role, emphasizing the candidate's full-stack web development experience, AI/LLM-powered product work, and cloud/CI-CD skills. I aligned the summary, experience bullets, and skills to mirror the job's language around scalable web applications, cross-functional collaboration, RESTful/WebSocket APIs, and AI-driven companion features.",
+ "notes": [
+  "Cleaned 1 filler/buzz phrase.",
+  "13 job keywords still not reflected."
+ ]
+}
+
+skills:
+[
+ {
+  "category": "Frontend",
+  "items": [
+   "JavaScript",
+   "TypeScript",
+   "React",
+   "Next.js",
+   "Tailwind",
+   "React Native",
+   "Flutter"
+  ]
+ },
+ {
+  "category": "Backend & DB",
+  "items": [
+   "Node.js",
+   "Express.js",
+   "Python",
+   "PHP",
+   "MySQL",
+   "MongoDB",
+   "REST APIs",
+   "WebSocket / Socket.IO"
+  ]
+ },
+ {
+  "category": "Cloud & Infra",
+  "items": [
+   "AWS",
+   "GCP (Cloud Run)",
+   "Docker",
+   "CI/CD (GitHub Actions)",
+   "Git",
+   "Serverless",
+   "Nginx",
+   "Linux"
+  ]
+ },
+ {
+  "category": "AI & Automation",
+  "items": [
+   "Dify",
+   "API/Android Reverse Engineering",
+   "Puppeteer",
+   "Appium",
+   "SSL Proxying",
+   "Burp",
+   "Frida"
+  ]
+ },
+ {
+  "category": "Automation",
+  "items": [
+   "API/Android Reverse Engineering",
+   "Puppeteer",
+   "Appium",
+   "SSL Proxying",
+   "Burp",
+   "Frida",
+   "Dify"
+  ]
+ }
+]
