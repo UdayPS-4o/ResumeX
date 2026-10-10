@@ -1,0 +1,72 @@
+{
+ "message": "I’ve re‑angled the résumé to highlight your full‑stack and AI‑driven product experience, aligning it with Axonex’s focus on scalable web apps, cross‑platform chatbots, and cloud integrations.",
+ "notes": [
+  "Cleaned 1 filler/buzz phrase.",
+  "16 job keywords still not reflected."
+ ]
+}
+
+--- summary field ---
+Full-stack developer focused on shipping production features and building efficient automation systems. Hands-on experience building LLM-powered products, developing agentic workflows, and reverse-engineering complex APIs to solve integration challenges. Comfortable with high-throughput systems and building reliable tools where documentation is limited. I enjoy digging into how systems work to deliver scalable, effective solutions.
+
+--- headline ---
+FULL STACK | AUTOMATION | REVERSE ENGINEERING
+
+--- skills ---
+[
+ {
+  "category": "Frontend",
+  "items": [
+   "React",
+   "Next.js",
+   "TypeScript",
+   "Tailwind",
+   "React Native"
+  ]
+ },
+ {
+  "category": "Backend & DB",
+  "items": [
+   "Node.js",
+   "Python",
+   "PHP",
+   "MySQL",
+   "Mongo"
+  ]
+ },
+ {
+  "category": "Automation",
+  "items": [
+   "API/Android Reverse Engineering",
+   "Puppeteer",
+   "Appium",
+   "SSL Proxying",
+   "Burp",
+   "Frida",
+   "Dify"
+  ]
+ },
+ {
+  "category": "Cloud & Infra",
+  "items": [
+   "GCP (Cloud Run)",
+   "AWS",
+   "Serverless",
+   "Nginx",
+   "Linux"
+  ]
+ },
+ {
+  "category": "AI/ML & LLMs",
+  "items": [
+   "Dify"
+  ]
+ },
+ {
+  "category": "Mobile & Cross‑Platform",
+  "items": [
+   "React Native",
+   "Next.js"
+  ]
+ }
+]
