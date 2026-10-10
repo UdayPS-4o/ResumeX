@@ -4,7 +4,7 @@
 // Compiles via the Typst engine (format: 'typst').
 
 import { sectionTitle, orderSections, generateTypstStyles, applyNameTransform } from '../../typst.js';
-import { typ, typMd, typLink, typDate, typPaper, typIcon } from '../../typst.js';
+import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../../typst.js';
 
 // Native style profile — the values this template was hand-tuned with. The
 // customization levels scale these (level 3 == native), so an untouched resume
@@ -86,10 +86,11 @@ export function renderClassic(r, opts = {}) {
   // an optional GPA line, and optional detail bullets.
   if (r.education?.length) {
     const items = r.education.map((e) => {
+      const { inline, bullets } = eduGrades(e);
+      const degree = [e.degree && typ(e.degree), ...inline].filter(Boolean).join(' #sym.dash.em ');
       const lines = [`#entryhead[${typ(e.school || '')}][${typ(e.location || '')}]`];
-      lines.push(`#entrysub[${typ(e.degree || '')}][${typDate(e.start, e.end)}]`);
-      if (e.gpa) lines.push(`GPA: ${typ(e.gpa)}`);
-      if (e.details?.length) lines.push(e.details.map((d) => `- ${typMd(d)}`).join('\n'));
+      lines.push(`#entrysub[${degree}][${typDate(e.start, e.end)}]`);
+      if (bullets.length) lines.push(bullets.map((d) => `- ${typMd(d)}`).join('\n'));
       return lines.join('\n\n');
     });
     blocks.education = `#sectionhead[${H('education', 'Education')}]\n${items.join(`\n\n#v(${styles.entrySpacing})\n\n`)}`;
