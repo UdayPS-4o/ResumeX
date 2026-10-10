@@ -4,7 +4,7 @@
 // rule beneath, two-line entry heads. Compiles via the Typst engine.
 
 import { sectionTitle, orderSections, generateTypstStyles, applyNameTransform } from '../../typst.js';
-import { typ, typMd, typLink, typDate, typPaper, typIcon } from '../../typst.js';
+import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../../typst.js';
 
 // Native style profile — the values this template was hand-tuned with. The
 // customization levels scale these (level 3 == native), so an untouched resume
@@ -80,15 +80,11 @@ export function renderJake(r, opts = {}) {
 
   if (r.education?.length) {
     const items = r.education.map((e) => {
-      const degree = [
-        e.degree && typ(e.degree),
-        e.gpa && `GPA: ${typ(e.gpa)}`,
-      ]
-        .filter(Boolean)
-        .join(' #sym.dash.em ');
+      const { inline, bullets } = eduGrades(e);
+      const degree = [e.degree && typ(e.degree), ...inline].filter(Boolean).join(' #sym.dash.em ');
       const lines = [`#subheading[${typ(e.school)}][${typ(e.location)}][${degree}][${typDate(e.start, e.end)}]`];
-      if (e.details?.length) {
-        lines.push(`#bullets[\n${e.details.map((d) => `  - ${typMd(d)}`).join('\n')}\n]`);
+      if (bullets.length) {
+        lines.push(`#bullets[\n${bullets.map((d) => `  - ${typMd(d)}`).join('\n')}\n]`);
       }
       return lines.join('\n');
     });

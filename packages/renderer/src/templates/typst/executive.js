@@ -4,7 +4,7 @@
 // Compiles via the Typst engine (format: 'typst').
 
 import { sectionTitle, orderSections, generateTypstStyles, applyNameTransform } from '../../typst.js';
-import { typ, typMd, typLink, typDate, typPaper, typIcon } from '../../typst.js';
+import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../../typst.js';
 
 // Native style profile — the values this template was hand-tuned with. The
 // customization levels scale these (level 3 == native), so an untouched resume
@@ -134,9 +134,8 @@ export function renderExecutive(r, opts = {}) {
       const schoolLoc = [e.school && typ(e.school), e.location && typ(e.location)]
         .filter(Boolean)
         .join(', ');
-      const sub = [];
-      if (e.degree) sub.push(typ(e.degree));
-      if (e.gpa) sub.push(`GPA: ${typ(e.gpa)}`);
+      const { inline, bullets } = eduGrades(e);
+      const sub = [[e.degree && typ(e.degree), ...inline].filter(Boolean).join(' #sym.dash.em ')].filter(Boolean);
 
       const parts = [];
       parts.push(`[${schoolLoc}]`);
@@ -144,8 +143,8 @@ export function renderExecutive(r, opts = {}) {
       if (sub.length) {
         parts.push(`description: [\n${sub.join(' \\\n')}\n]`);
       }
-      if (e.details?.length) {
-        const listItems = e.details.map((d) => `- ${typMd(d)}`).join('\n');
+      if (bullets.length) {
+        const listItems = bullets.map((d) => `- ${typMd(d)}`).join('\n');
         parts.push(`bullets: [\n${listItems}\n]`);
       }
       return `#entry(${parts.join(', ')})`;

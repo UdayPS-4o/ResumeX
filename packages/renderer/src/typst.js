@@ -52,6 +52,27 @@ export function typDate(start, end) {
   return typ(start || end);
 }
 
+// Education grades ("84%", "CGPA: 8.1/10") are often entered as one-word detail
+// bullets, which each cost a full line. Split an education entry into `inline`
+// (escaped GPA + short numeric details, to sit on the degree line) and `bullets`
+// (everything else, still rendered as a list).
+const GRADE_DETAIL = /^(?=.{1,28}$)(?=.*\d)[^.!?]*$/;
+const GPA_LABELLED = /gpa|grade|percent|%/i;
+
+export function eduGrades(e) {
+  const inline = [];
+  const bullets = [];
+  const gpa = e.gpa && String(e.gpa).trim();
+  if (gpa) inline.push(typ(GPA_LABELLED.test(gpa) ? gpa : `GPA: ${gpa}`));
+  for (const d of e.details || []) {
+    const t = String(d ?? '').trim();
+    if (!t) continue;
+    if (GRADE_DETAIL.test(t)) inline.push(typ(t));
+    else bullets.push(d);
+  }
+  return { inline, bullets };
+}
+
 // Map the app's pageSize to a Typst paper name.
 export function typPaper(pageSize) {
   const ps = String(pageSize || '').toLowerCase();

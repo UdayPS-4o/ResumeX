@@ -5,7 +5,7 @@
 // accent bullets. Compiles via the Typst engine.
 
 import { sectionTitle, orderSections, generateTypstStyles, applyNameTransform } from '../../typst.js';
-import { typ, typMd, typLink, typDate, typPaper, typIcon } from '../../typst.js';
+import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../../typst.js';
 
 // Native style profile — the values this template was hand-tuned with. The
 // customization levels scale these (level 3 == native), so an untouched resume
@@ -121,11 +121,14 @@ export function renderDeedy(r, opts = {}) {
   // EDUCATION (Left sidebar)
   if (r.education?.length) {
     const items = r.education.map((e) => {
+      const { inline, bullets } = eduGrades(e);
       const lines = [
         `#strong[${typ(e.school || '')}]`,
-        e.degree && `#emph[${typ(e.degree)}]`,
-        e.gpa && `GPA: ${typ(e.gpa)}`,
+        (e.degree || inline.length) &&
+          // Grades are boxed so the narrow sidebar wraps between items, never inside "7.44 CGPA".
+          `#emph[${[e.degree && typ(e.degree), ...inline.map((g) => `#box[${g}]`)].filter(Boolean).join(' #sym.dash.em ')}]`,
         typDate(e.start, e.end),
+        ...bullets.map((d) => typMd(d)),
       ].filter(Boolean);
       return lines.join(' \\\n');
     });
