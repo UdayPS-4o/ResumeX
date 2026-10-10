@@ -119,7 +119,21 @@ const LEVEL = {
   section: { 1: 0.45, 2: 0.70, 3: 1.0, 4: 1.42, 5: 1.90 },
   entry:   { 1: 0.40, 2: 0.68, 3: 1.0, 4: 1.46, 5: 1.95 },
   line:    { 1: 0.84, 2: 0.92, 3: 1.0, 4: 1.12, 5: 1.26 },
+  // Header block: the name and the contact line scale independently of the
+  // section-heading scale so each can be nudged on its own.
+  name:    { 1: 0.70, 2: 0.85, 3: 1.0, 4: 1.2, 5: 1.45 },
+  contact: { 1: 0.78, 2: 0.89, 3: 1.0, 4: 1.12, 5: 1.26 },
 };
+
+// Contact-line separators. `native` (a template's own join string) is used when
+// the user hasn't picked one; the h() gaps keep the rhythm identical across them.
+const CONTACT_SEPARATORS = {
+  pipe: ' #h(0.35em)|#h(0.35em) ',
+  dot: ' #h(0.35em)#sym.bullet#h(0.35em) ',
+  dash: ' #h(0.35em)#sym.dash.en#h(0.35em) ',
+  space: ' #h(1em) ',
+};
+const HEADER_ALIGNS = new Set(['left', 'center', 'right']);
 const mult = (table, level) => table[level] ?? table[3];
 
 const ACCENT_COLOR_MAP = {
@@ -205,11 +219,14 @@ export function generateTypstStyles(opts = {}, native = {}) {
   const sectMult   = mult(LEVEL.section, opts.spacing?.section) * compactGap;
   const entryMult  = mult(LEVEL.entry,   opts.spacing?.item) * compactGap;
   const lineMult   = mult(LEVEL.line,    opts.spacing?.lineHeight) * compactLine;
+  const hdr = opts.header || {};
+  const nameMult    = mult(LEVEL.name,    hdr.nameSize);
+  const contactMult = mult(LEVEL.contact, hdr.contactSize);
 
   // ── Typography (absolute pt = native × level) ──
   const baseFontPt = (native.baseFontPt ?? 11) * fontMult;
   const baseFontSize = `${r2(baseFontPt)}pt`;
-  const nameFontSize = `${r2((native.nameFontPt ?? 24) * fontMult * headerMult)}pt`;
+  const nameFontSize = `${r2((native.nameFontPt ?? 24) * fontMult * headerMult * nameMult)}pt`;
   const headingFontSize = `${r2((native.headingFontPt ?? 13) * fontMult * headerMult)}pt`;
   // Raw multiplier exposed for templates/packages that derive their own sizes.
   const headerScale = r2(headerMult);
@@ -243,6 +260,14 @@ export function generateTypstStyles(opts = {}, native = {}) {
   const skillsLayout = opts.skillsLayout || native.skillsLayout || 'inline';
   const justify = opts.justify ?? native.justify ?? false;
   const linkAccent = native.linkAccent ?? false;
+
+  // ── Header block ── alignment + contact-line size/separator (native unless set).
+  const headerAlign = HEADER_ALIGNS.has(hdr.align) ? hdr.align : (native.headerAlign || 'center');
+  // Scale a template's native contact size (in em) by the Contact Size level.
+  const contactSize = (nativeEm = 0.9) => `${r2(nativeEm * contactMult)}em`;
+  // Join contact items with the chosen separator, or the template's own.
+  const joinContact = (items, nativeSep) =>
+    items.join(CONTACT_SEPARATORS[hdr.contactSeparator] ?? nativeSep);
 
   // ── Sidebar ── neat uses an absolute cm width; deedy uses fr column ratios.
   const sidebarWidth = opts.sidebarWidth || 'medium';
@@ -287,6 +312,9 @@ export function generateTypstStyles(opts = {}, native = {}) {
     justify,
     linkAccent,
     showContactIcons: opts.showContactIcons ?? true,
+    headerAlign,
+    contactSize,
+    joinContact,
     // sidebar
     sideWidth,
     columnRatioLeft,

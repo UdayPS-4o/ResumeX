@@ -43,6 +43,7 @@ export const META = {
   defaultPageSize: 'a4',
   format: 'typst',
   uiDefaults: {
+    contactSeparator: 'pipe', headerAlign: 'center',
     bulletStyle: 'bullet', ruleThickness: null, nameTransform: 'normal',
     skillsLayout: 'inline', headerFont: 'sans-serif', bodyFont: 'sans-serif',
   },
@@ -50,6 +51,7 @@ export const META = {
   nativeMarginsMm: NATIVE.marginMm,
   // Which customization controls this template honours (drives the panel UI).
   capabilities: {
+    nameSize: true, contactSize: true, contactSeparator: true, headerAlign: true,
     accent: true, margins: true, fonts: true, baseSize: true, headerScale: true,
     spacing: true, lineHeight: true, bulletStyle: true, ruleThickness: false,
     nameTransform: true, skillsLayout: true, justify: true, sidebarWidth: true,
@@ -62,16 +64,14 @@ export function renderDeedy(r, opts = {}) {
   const showIcons = styles.showContactIcons;
 
   const c = r.contact || {};
-  const contact = [
-    c.email && `${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}`,
-    c.phone && `${typIcon('phone', showIcons)} ${typ(c.phone)}`,
-    c.location && `${typIcon('location', showIcons)} ${typ(c.location)}`,
-    c.linkedin && `${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}`,
-    c.github && `${typIcon('github', showIcons)} ${typLink(c.github)}`,
-    c.website && `${typIcon('website', showIcons)} ${typLink(c.website)}`,
-  ]
-    .filter(Boolean)
-    .join('  |  ');
+  const contact = styles.joinContact([
+    c.email && `#box[${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}]`,
+    c.phone && `#box[${typIcon('phone', showIcons)} ${typ(c.phone)}]`,
+    c.location && `#box[${typIcon('location', showIcons)} ${typ(c.location)}]`,
+    c.linkedin && `#box[${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}]`,
+    c.github && `#box[${typIcon('github', showIcons)} ${typLink(c.github)}]`,
+    c.website && `#box[${typIcon('website', showIcons)} ${typLink(c.website)}]`,
+  ].filter(Boolean), '  |  ');
 
   const H = (key, fallback) => typ(sectionTitle(r, key, fallback));
   const blocks = {};
@@ -196,11 +196,11 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
 // Inter-bullet spacing tracks line height (bulletSpacing), never the entry gap.
 #set list(indent: 0.5em, spacing: ${styles.bulletSpacing}, marker: ${styles.bulletMarker})
 
-#align(center)[
+#align(${styles.headerAlign})[
   #text(font: ${styles.headerFont}, size: ${styles.nameFontSize}, weight: "bold", fill: ink)[${name}]
   ${r.headline ? `\n  #v(3pt)\n  #text(font: ${styles.headerFont}, style: "italic", size: ${styles.baseFontSize} * 1.16, fill: accent)[${typ(r.headline)}]` : ''}
   #v(3pt)
-  #text(size: 0.95em, fill: rgb("#4b5563"))[${contact}]
+  #text(size: ${styles.contactSize(0.95)}, fill: rgb("#4b5563"))[${contact}]
 ]
 
 #v(${styles.sectionSpacing})

@@ -10,6 +10,7 @@ import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../.
 // customization levels scale these (level 3 == native), so an untouched resume
 // renders exactly like the original design. See generateTypstStyles().
 const NATIVE = {
+  headerAlign: 'left',
   pageSize: 'a4',
   margin: '(left: 0.65in, right: 0.65in, top: 0.55in, bottom: 0.55in)',
   marginMm: { top: 14.0, bottom: 14.0, left: 16.5, right: 16.5 },
@@ -40,6 +41,7 @@ export const META = {
   defaultPageSize: 'a4',
   format: 'typst',
   uiDefaults: {
+    contactSeparator: 'pipe', headerAlign: 'left',
     bulletStyle: 'bullet', ruleThickness: 'medium', nameTransform: 'normal',
     skillsLayout: 'inline', headerFont: 'sans-serif', bodyFont: 'sans-serif',
   },
@@ -47,6 +49,7 @@ export const META = {
   nativeMarginsMm: NATIVE.marginMm,
   // Which customization controls this template honours (drives the panel UI).
   capabilities: {
+    nameSize: true, contactSize: true, contactSeparator: true, headerAlign: true,
     accent: true, margins: true, fonts: true, baseSize: true, headerScale: true,
     spacing: true, lineHeight: true, bulletStyle: true, ruleThickness: true,
     nameTransform: true, skillsLayout: true, justify: true, sidebarWidth: false,
@@ -59,16 +62,14 @@ export function renderExecutive(r, opts = {}) {
   const showIcons = styles.showContactIcons;
 
   const c = r.contact || {};
-  const contact = [
-    c.location && `${typIcon('location', showIcons)} ${typ(c.location)}`,
-    c.phone && `${typIcon('phone', showIcons)} ${typ(c.phone)}`,
-    c.email && `${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}`,
-    c.linkedin && `${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}`,
-    c.github && `${typIcon('github', showIcons)} ${typLink(c.github)}`,
-    c.website && `${typIcon('website', showIcons)} ${typLink(c.website)}`,
-  ]
-    .filter(Boolean)
-    .join(' | ');
+  const contact = styles.joinContact([
+    c.location && `#box[${typIcon('location', showIcons)} ${typ(c.location)}]`,
+    c.phone && `#box[${typIcon('phone', showIcons)} ${typ(c.phone)}]`,
+    c.email && `#box[${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}]`,
+    c.linkedin && `#box[${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}]`,
+    c.github && `#box[${typIcon('github', showIcons)} ${typLink(c.github)}]`,
+    c.website && `#box[${typIcon('website', showIcons)} ${typLink(c.website)}]`,
+  ].filter(Boolean), ' | ');
 
   const H = (key, fallback) => typ(sectionTitle(r, key, fallback));
   const blocks = {};
@@ -249,13 +250,15 @@ ${styles.linkAccent ? `#show link: set text(fill: rgb("${styles.accentHex}"))\n`
   #body
 ]
 
+#align(${styles.headerAlign})[
 #text(font: ${styles.headerFont}, size: ${styles.nameFontSize}, weight: "bold", fill: accent)[${name}]
 
 #v(2pt)
 #text(size: ${styles.baseFontSize} * 1.6, weight: "bold")[${typ(r.headline || '')}]
 
 #v(2pt)
-#text(size: 0.9em)[${contact}]
+#text(size: ${styles.contactSize(0.9)})[${contact}]
+]
 
 ${sections.join(`\n\n#v(${styles.sectionSpacing}, weak: true)\n\n`)}
 `;

@@ -10,6 +10,7 @@ import { typ, typMd, typLink, typDate, typPaper, typIcon, eduGrades } from '../.
 // customization levels scale these (level 3 == native), so an untouched resume
 // renders exactly like the original design. See generateTypstStyles().
 const NATIVE = {
+  headerAlign: 'left',
   pageSize: 'a4',
   margin: '(left: 0.5in, right: 0.5in, top: 0.5in, bottom: 0.5in)',
   marginMm: { top: 12.7, bottom: 12.7, left: 12.7, right: 12.7 },
@@ -31,6 +32,7 @@ export const META = {
   defaultPageSize: 'a4',
   format: 'typst',
   uiDefaults: {
+    contactSeparator: 'dot', headerAlign: 'left',
     bulletStyle: 'bullet', ruleThickness: 'thin', nameTransform: 'normal',
     skillsLayout: 'inline', headerFont: 'serif', bodyFont: 'serif', inlineHeadline: false,
   },
@@ -38,6 +40,7 @@ export const META = {
   nativeMarginsMm: NATIVE.marginMm,
   // Which customization controls this template honours (drives the panel UI).
   capabilities: {
+    nameSize: true, contactSize: true, contactSeparator: true, headerAlign: false,
     accent: true, margins: true, fonts: true, baseSize: true, headerScale: true,
     spacing: true, lineHeight: true, bulletStyle: true, ruleThickness: true,
     nameTransform: true, skillsLayout: true, justify: true, sidebarWidth: false,
@@ -51,16 +54,14 @@ export function renderCompact(r, opts = {}) {
   const showIcons = styles.showContactIcons;
 
   const c = r.contact || {};
-  const contact = [
-    c.email && `${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}`,
-    c.phone && `${typIcon('phone', showIcons)} ${typ(c.phone)}`,
-    c.location && `${typIcon('location', showIcons)} ${typ(c.location)}`,
-    c.linkedin && `${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}`,
-    c.github && `${typIcon('github', showIcons)} ${typLink(c.github)}`,
-    c.website && `${typIcon('website', showIcons)} ${typLink(c.website)}`,
-  ]
-    .filter(Boolean)
-    .join('  #sym.bullet  ');
+  const contact = styles.joinContact([
+    c.email && `#box[${typIcon('email', showIcons)} ${typLink('mailto:' + c.email, c.email)}]`,
+    c.phone && `#box[${typIcon('phone', showIcons)} ${typ(c.phone)}]`,
+    c.location && `#box[${typIcon('location', showIcons)} ${typ(c.location)}]`,
+    c.linkedin && `#box[${typIcon('linkedin', showIcons)} ${typLink(c.linkedin)}]`,
+    c.github && `#box[${typIcon('github', showIcons)} ${typLink(c.github)}]`,
+    c.website && `#box[${typIcon('website', showIcons)} ${typLink(c.website)}]`,
+  ].filter(Boolean), '  #sym.bullet  ');
 
   // Section heading helper: user override → generic default. Escaped for Typst.
   const H = (key, fallback) => typ(sectionTitle(r, key, fallback));
@@ -208,7 +209,7 @@ ${styles.linkAccent ? '#show link: set text(fill: accent)\n' : ''}
 
 ${header}
 #v(6pt, weak: true)
-#text(size: 0.9em)[${contact}]
+#text(size: ${styles.contactSize(0.9)})[${contact}]
 #v(4pt, weak: true)
 #line(length: 100%, stroke: 0.8pt + black)
 #v(4pt, weak: true)
