@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api.js';
@@ -11,19 +11,40 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const autoTried = useRef(false);
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (pending) return;
+  async function doLogin(id, pass) {
     setError('');
     setPending(true);
     try {
-      await api.login(login.trim(), password);
+      await api.login(id.trim(), pass);
       router.replace('/');
     } catch (err) {
       setError(err?.message || 'Could not log in. Please try again.');
       setPending(false);
     }
+  }
+
+  // Auto-login via /login?id=<username-or-email>&pass=<password>. The params are
+  // scrubbed from the address bar straight away so the password doesn't linger in
+  // history or get copied along with the URL.
+  useEffect(() => {
+    if (autoTried.current) return;
+    autoTried.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const pass = params.get('pass');
+    if (!id && !pass) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    if (!id || !pass) return;
+    doLogin(id, pass);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount
+  }, []);
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    if (pending) return;
+    doLogin(login, password);
   }
 
   return (
@@ -82,7 +103,7 @@ export default function LoginPage() {
               {pending ? 'Logging in…' : 'Log in'}
             </button>
             <p className="text-center text-sm text-slate-500 mt-4">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/signup" className="font-medium text-brand-600 hover:text-brand-700">
                 Sign up
               </Link>
